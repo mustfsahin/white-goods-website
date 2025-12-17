@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Goods Concept - Premium Shop</title>
+    
+    <link rel="icon" type="image/jpeg" href="favicon.jpg">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg sticky-top shadow py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="index.html">White Goods Concept</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-3">
+                    <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="about.html">About Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+                </ul>
+
+                <div class="d-flex me-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                        <input class="form-control border-0" type="search" placeholder="Search..." onkeyup="searchProduct(this.value)">
+                    </div>
+                </div>
+
+                <div id="user-area" class="me-3 d-flex align-items-center">
+                    </div>
+                
+                <button class="btn btn-outline-light rounded-pill me-2" onclick="toggleTheme()" id="theme-btn">
+                    <i class="bi bi-moon-stars-fill"></i>
+                </button>
+
+                <button class="btn btn-primary position-relative rounded-pill px-4" data-bs-toggle="offcanvas" data-bs-target="#cartCanvas">
+                    <i class="bi bi-cart3 me-1"></i> Cart
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="heroCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active" style="height: 400px; background: linear-gradient(45deg, #0d6efd, #0dcaf0);">
+                <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-3">
+                    <h1 class="display-3 fw-bold">Modern Kitchens</h1>
+                    <p class="fs-4">Smart Fridges & High-Tech Ovens for your home.</p>
+                </div>
+            </div>
+            <div class="carousel-item" style="height: 400px; background: linear-gradient(45deg, #20c997, #198754);">
+                <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-3">
+                    <h1 class="display-3 fw-bold">Smart Laundry</h1>
+                    <p class="fs-4">Efficient washing machines with AI technology.</p>
+                </div>
+            </div>
+            <div class="carousel-item" style="height: 400px; background: linear-gradient(45deg, #6610f2, #d63384);">
+                <div class="d-flex flex-column justify-content-center align-items-center h-100 text-white text-center p-3">
+                    <h1 class="display-3 fw-bold">Home Comfort</h1>
+                    <p class="fs-4">Premium Air Conditioners & Small Appliances.</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+    </div>
+
+    <div class="container py-5 flex-grow-1">
+        <div class="row">
+            <div class="col-lg-3 mb-4">
+                <div class="bg-white p-3 rounded shadow-sm sticky-top" style="top: 100px; z-index: 1;">
+                    
+                    <h5 class="fw-bold mb-3"><i class="bi bi-grid-fill text-primary"></i> Categories</h5>
+                    <ul class="list-group list-group-flush" id="category-list">
+                        </ul>
+
+                    <hr class="my-3">
+
+                    <h5 class="fw-bold mb-3"><i class="bi bi-cash-stack text-success"></i> Price Range</h5>
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-5">
+                            <input type="number" id="min-price" class="form-control form-control-sm" placeholder="Min" min="0">
+                        </div>
+                        <div class="col-2 text-center text-muted">-</div>
+                        <div class="col-5">
+                            <input type="number" id="max-price" class="form-control form-control-sm" placeholder="Max">
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-sm rounded-pill fw-bold shadow-sm" onclick="applyPriceFilter()">
+                            Filter <i class="bi bi-funnel-fill ms-1"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="resetFilters()">
+                            Reset <i class="bi bi-arrow-counterclockwise ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                    <div>
+                        <h4 class="fw-bold mb-0" id="page-title">Featured Products</h4>
+                        <span class="text-muted small" id="result-count">Loading...</span>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mt-2 mt-md-0">
+                        <label class="me-2 small text-muted"><i class="bi bi-sort-down"></i> Sort by:</label>
+                        <select class="form-select form-select-sm shadow-sm" style="width: 200px; border-radius: 20px;" onchange="sortProducts(this.value)">
+                            <option value="newest">Newest Items</option>
+                            <option value="price-asc">Price (Low to High)</option>
+                            <option value="price-desc">Price (High to Low)</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-4" id="product-list">
+                    <div class="text-center mt-5 w-100">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-5 mt-auto bg-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-white fw-bold">White Goods Concept</h5>
+                    <p class="small text-secondary">The best electronics store powered by Django & SQL Server.</p>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-white">Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="index.html" class="text-secondary text-decoration-none">Home</a></li>
+                        <li><a href="about.html" class="text-secondary text-decoration-none">About Us</a></li>
+                        <li><a href="contact.html" class="text-secondary text-decoration-none">Contact</a></li> 
+                    </ul>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <h5 class="text-white">Follow Us</h5>
+                    <div class="d-flex gap-3 fs-4">
+                        <a href="#" class="text-secondary"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="text-secondary"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="text-secondary"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-top border-secondary pt-3 mt-3 text-center small text-secondary">
+                &copy; 2025 White Goods Concept. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content overflow-hidden border-0 shadow-lg">
+                <div class="row g-0">
+                    <div class="col-md-6 bg-light d-flex align-items-center justify-content-center p-4">
+                        <img id="modal-img" src="" class="img-fluid rounded">
+                    </div>
+                    <div class="col-md-6 p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between">
+                            <h3 class="fw-bold" id="modal-title">Product</h3>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <p class="text-muted flex-grow-1" id="modal-desc">...</p>
+                        <span class="badge bg-warning text-dark align-self-start mb-3" id="modal-stock">In Stock</span>
+                        <div class="mt-auto">
+                            <h2 class="text-success fw-bold mb-3" id="modal-price">$0.00</h2>
+                            <button class="btn btn-primary w-100 py-2 rounded-pill" id="modal-btn">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="compareModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>Product Comparison</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center mb-0 align-middle">
+                            <thead class="bg-light" id="compare-header">
+                                </thead>
+                            <tbody id="compare-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <div id="compare-floating-container" class="position-fixed start-50 translate-middle-x" style="bottom: 30px; z-index: 1050; display: none;">
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-warning rounded-pill shadow-lg px-4 py-2 fw-bold" onclick="openCompareModal()">
+                Compare (<span id="compare-count">0</span>) Items <i class="bi bi-arrow-left-right ms-2"></i>
+            </button>
+            
+            <button class="btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
+                    style="width: 42px; height: 42px;" 
+                    onclick="resetComparison()" 
+                    title="Clear List">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="offcanvas offcanvas-end" id="cartCanvas">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title">Shopping Cart</h5>
+            <button class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            
+            <div class="mb-3 pb-3 border-bottom">
+                <p class="small mb-2 fw-bold text-center" id="shipping-msg">
+                    Spend <span class="text-danger">$2000</span> for Free Shipping 🚚
+                </p>
+                <div class="progress shadow-sm" style="height: 12px; border-radius: 10px;">
+                    <div id="shipping-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <ul class="list-group mb-3 flex-grow-1" id="cart-items" style="overflow-y: auto;"></ul>
+            <div class="border-top pt-3">
+                <div class="d-flex justify-content-between h4 fw-bold">
+                    <span>Total:</span>
+                    <span class="text-primary" id="cart-total">$0.00</span>
+                </div>
+                <button class="btn btn-success w-100 py-3 mt-3 fw-bold shadow" onclick="checkout()">
+                    CHECKOUT <i class="bi bi-arrow-right"></i>
+                </button>
+                <button class="btn btn-outline-danger w-100 mt-2" onclick="clearCart()">Clear Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

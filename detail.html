@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail - White Goods Concept</title>
+    <link rel="icon" type="image/jpeg" href="favicon.jpg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg sticky-top shadow py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="index.html">White Goods Concept </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-3">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="about.html">About Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <div id="user-area" class="me-3 d-flex align-items-center"></div>
+
+                    <button class="btn btn-outline-light rounded-pill me-2" onclick="toggleTheme()" id="theme-btn">
+                        <i class="bi bi-moon-stars-fill"></i>
+                    </button>
+
+                    <button class="btn btn-primary position-relative rounded-pill px-4" data-bs-toggle="offcanvas" data-bs-target="#cartCanvas">
+                        <i class="bi bi-cart3 me-1"></i> Cart
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5 flex-grow-1">
+        
+        <div id="loading" class="text-center mt-5">
+            <div class="spinner-border text-primary"></div>
+            <p>Loading product details...</p>
+        </div>
+
+        <div id="product-content" class="row bg-white rounded shadow-sm p-4 d-none mb-5">
+            <div class="col-md-6 text-center mb-4 mb-md-0 d-flex align-items-center justify-content-center bg-light rounded">
+                <img id="detail-img" src="" class="img-fluid rounded shadow" style="max-height: 400px; object-fit: contain;">
+            </div>
+            
+            <div class="col-md-6 d-flex flex-column justify-content-center p-4">
+                <small class="text-muted text-uppercase fw-bold mb-2" id="detail-cat">Product Detail</small>
+                <h1 class="fw-bold display-6 mb-3" id="detail-name">Product Name</h1>
+                <p class="text-muted mb-4 lead" id="detail-desc" style="font-size: 1rem;">Description goes here...</p>
+                
+                <div class="d-flex align-items-center mb-4 p-3 bg-light rounded">
+                    <h2 class="text-primary fw-bold me-3 mb-0" id="detail-price">$0.00</h2>
+                    <span id="detail-stock" class="badge bg-success fs-6">In Stock</span>
+                </div>
+
+                <div class="d-flex align-items-center mb-4">
+                    <span class="me-3 fw-bold">Quantity:</span>
+                    <div class="input-group" style="width: 140px;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="decreaseQty()">-</button>
+                        <input type="text" id="product-qty" class="form-control text-center border-secondary" value="1" readonly style="font-weight: bold;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="increaseQty()">+</button>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button id="detail-btn" class="btn btn-primary btn-lg rounded-pill shadow fw-bold py-3">
+                        ADD TO CART <i class="bi bi-cart-plus ms-2"></i>
+                    </button>
+                    <a href="index.html" class="btn btn-outline-secondary rounded-pill fw-bold py-2">Continue Shopping</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row bg-white rounded shadow-sm p-4 mb-5 d-none" id="reviews-section">
+            <h3 class="fw-bold mb-4 border-bottom pb-2">Reviews & Ratings ⭐</h3>
+            
+            <div class="col-md-4 mb-4 border-end">
+                <h5 class="fw-bold mb-3">Write a Review</h5>
+                <form onsubmit="event.preventDefault(); submitReview();">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rating</label>
+                        <select class="form-select" id="review-rating">
+                            <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                            <option value="4">⭐⭐⭐⭐ (Good)</option>
+                            <option value="3">⭐⭐⭐ (Average)</option>
+                            <option value="2">⭐⭐ (Poor)</option>
+                            <option value="1">⭐ (Bad)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Comment</label>
+                        <textarea class="form-control" id="review-text" rows="4" placeholder="Share your thoughts about this product..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 rounded-pill shadow-sm">Submit Review <i class="bi bi-send-fill ms-1"></i></button>
+                </form>
+            </div>
+
+            <div class="col-md-8 ps-md-4">
+                <h5 class="fw-bold">User Reviews <span class="badge bg-secondary rounded-pill" id="review-count">0</span></h5>
+                <div id="reviews-list" class="mt-3 pe-2" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted mt-4">
+                        <div class="spinner-border spinner-border-sm text-secondary"></div> Loading reviews...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="related-area" class="d-none animate-fade-in">
+            <h3 class="fw-bold mb-4 border-bottom pb-2">You might also like... ✨</h3>
+            <div class="row g-4" id="related-list">
+                </div>
+        </div>
+
+    </div>
+
+    <footer class="py-5 mt-auto bg-dark text-white">
+        <div class="container text-center"><small>&copy; 2025 White Goods Concept. All rights reserved.</small></div>
+    </footer>
+
+    <div class="offcanvas offcanvas-end" id="cartCanvas">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title">Shopping Cart</h5>
+            <button class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            
+            <div class="mb-3 pb-3 border-bottom">
+                <p class="small mb-2 fw-bold text-center" id="shipping-msg">
+                    Spend <span class="text-danger">$2000</span> for Free Shipping 🚚
+                </p>
+                <div class="progress shadow-sm" style="height: 12px; border-radius: 10px;">
+                    <div id="shipping-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <ul class="list-group mb-3 flex-grow-1" id="cart-items" style="overflow-y: auto;"></ul>
+            <div class="border-top pt-3">
+                <div class="d-flex justify-content-between h4 fw-bold"><span>Total:</span><span class="text-primary" id="cart-total">$0.00</span></div>
+                <button class="btn btn-success w-100 py-3 mt-3 fw-bold shadow" onclick="checkout()">CHECKOUT <i class="bi bi-arrow-right"></i></button>
+                <button class="btn btn-outline-danger w-100 mt-2" onclick="clearCart()">Clear Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+
+            if (productId) {
+                // Ürünü yükle
+                loadSingleProduct(productId);
+                
+                // 🔥 Yorumları yükle
+                if (typeof loadReviews === 'function') {
+                    document.getElementById('reviews-section').classList.remove('d-none');
+                    loadReviews(productId);
+                }
+            } else {
+                alert("Ürün bulunamadı!");
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

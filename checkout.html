@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - White Goods Concept</title>
+    <link rel="icon" type="image/jpeg" href="favicon.jpg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="index.html">White Goods Concept</a>
+            <div class="d-flex align-items-center">
+                <a href="index.html" class="btn btn-outline-light btn-sm rounded-pill">Back to Shop</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5 flex-grow-1">
+        <div class="row g-5">
+            
+            <div class="col-md-7 col-lg-8">
+                <h4 class="mb-3 fw-bold">Billing Address</h4>
+                
+                <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Quick Fill from Saved Addresses:</label>
+                        <select class="form-select border-primary shadow-sm" id="savedAddressSelect" onchange="fillCheckoutForm(this)">
+                            <option value="">Loading addresses...</option>
+                        </select>
+                </div>
+
+                <form class="needs-validation" id="checkoutForm">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="fullName" placeholder="John Doe" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" placeholder="+90 555..." required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="address" rows="3" placeholder="1234 Main St" required></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h4 class="mb-3 fw-bold text-primary">Payment Details 💳</h4>
+                    
+                    <div class="card-wrapper mb-4"></div>
+
+                    <div class="card-form-inner">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" class="form-control" name="number" placeholder="•••• •••• •••• ••••" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name on Card</label>
+                                <input type="text" class="form-control" name="name" placeholder="JOHN DOE" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Expiry (MM/YY)</label>
+                                <input type="text" class="form-control" name="expiry" id="expiryInput" placeholder="MM / YY" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CVC</label>
+                                <input type="text" class="form-control" name="cvc" placeholder="123" required maxlength="4">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="termsCheck" onchange="toggleSubmitBtn()">
+                        <label class="form-check-label small" for="termsCheck">
+                            I have read and agree to the <a href="#" class="text-primary text-decoration-none">Distance Sales Agreement</a> and <a href="#" class="text-primary text-decoration-none">Privacy Policy</a>.
+                        </label>
+                    </div>
+
+                    <button id="completeBtn" class="w-100 btn btn-secondary btn-lg rounded-pill shadow fw-bold py-3" type="button" onclick="completeOrder()" disabled>
+                        COMPLETE ORDER <i class="bi bi-lock-fill ms-2" id="btnIcon"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div class="col-md-5 col-lg-4">
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-body p-4">
+                        <h4 class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-primary fw-bold">Your Cart</span>
+                            <span class="badge bg-primary rounded-pill" id="checkout-count">0</span>
+                        </h4>
+                        <ul class="list-group mb-3" id="checkout-items" style="max-height: 300px; overflow-y: auto;"></ul>
+                        
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="couponCode" placeholder="Promo code">
+                            <button type="button" class="btn btn-secondary" onclick="showToast('Coupon checked only at final step!', 'info')">Redeem</button>
+                        </div>
+
+                        <li class="list-group-item d-flex justify-content-between bg-light rounded p-3">
+                            <span class="fw-bold fs-5">Total (USD)</span>
+                            <strong class="fs-4 text-success" id="checkout-total">$0.00</strong>
+                        </li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-5 mt-auto bg-dark text-white text-center">
+        <small>&copy; 2025 White Goods Concept. All rights reserved.</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/card/2.5.4/card.min.js"></script> 
+    <script src="js/script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if (cart.length === 0) { alert("Cart is empty!"); window.location.href = "index.html"; return; }
+
+            const list = document.getElementById('checkout-items');
+            let total = 0;
+            list.innerHTML = "";
+            cart.forEach(item => {
+                total += parseFloat(item.price);
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between lh-sm"><div><h6 class="my-0 text-truncate" style="max-width: 200px;">${item.name}</h6><small class="text-muted">$${item.price}</small></div></li>`;
+            });
+            document.getElementById('checkout-total').innerText = "$" + total.toFixed(2);
+            document.getElementById('checkout-count').innerText = cart.length;
+
+            // KART ANİMASYONU
+            new Card({
+                form: 'form', container: '.card-wrapper', width: 350, formatting: true,
+                formSelectors: { numberInput: 'input[name="number"]', expiryInput: 'input[name="expiry"]', cvcInput: 'input[name="cvc"]', nameInput: 'input[name="name"]' },
+                placeholders: { number: '•••• •••• •••• ••••', name: 'Full Name', expiry: 'MM / YY', cvc: '•••' }
+            });
+
+            // TARİH KISITLAMASI
+            const expiryInput = document.getElementById('expiryInput');
+            expiryInput.addEventListener('input', function(e) {
+                if (this.value.length > 7) { this.value = this.value.slice(0, 7); }
+                let cleanVal = this.value.replace(/\D/g, ''); 
+                if (cleanVal.length >= 2) {
+                    let month = parseInt(cleanVal.substring(0, 2));
+                    if (month > 12) { this.value = '12' + this.value.substring(2); }
+                }
+            });
+
+            // 🔥 Fix for initial address load
+            // Call loadAddresses() explicitly here or ensure it's in script.js DOMContentLoaded
+            if(typeof loadAddresses === 'function') {
+                loadAddresses();
+            }
+        });
+
+        // 🔥 SÖZLEŞME ONAY MANTIĞI
+        function toggleSubmitBtn() {
+            const checkbox = document.getElementById('termsCheck');
+            const btn = document.getElementById('completeBtn');
+            const icon = document.getElementById('btnIcon');
+
+            if (checkbox.checked) {
+                btn.disabled = false; // Kilidi aç
+                btn.classList.remove('btn-secondary'); // Griyi kaldır
+                btn.classList.add('btn-success'); // Yeşil yap
+                icon.classList.remove('bi-lock-fill'); // Kilit ikonunu kaldır
+                icon.classList.add('bi-check-circle-fill'); // Tik ikonu koy
+            } else {
+                btn.disabled = true; // Kilitle
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+                icon.classList.remove('bi-check-circle-fill');
+                icon.classList.add('bi-lock-fill');
+            }
+        }
+    </script>
+</body>
+</html>

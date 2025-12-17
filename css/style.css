@@ -1,0 +1,270 @@
+/* Modern Kart Tasarımı */
+.card { border: none; transition: all 0.3s; border-radius: 15px; overflow: hidden; }
+.card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+.card-img-top { height: 220px; object-fit: contain; padding: 20px; cursor: pointer; background-color: #fff; }
+
+/* Menü Butonları */
+.category-btn { border-radius: 10px !important; margin-bottom: 5px; cursor: pointer; transition: 0.2s; }
+.category-btn:hover { background-color: #e9ecef; }
+.category-btn.active { background-color: #0d6efd; color: white; box-shadow: 0 4px 6px rgba(13, 110, 253, 0.3); }
+
+/* Footer */
+footer { background-color: #212529; color: #adb5bd; }
+footer a { color: #adb5bd; text-decoration: none; transition: 0.2s; }
+footer a:hover { color: #fff; }
+
+/* Modal Resim */
+#modal-img { max-height: 300px; object-fit: contain; }
+
+/* İletişim Sayfası İkonları (Premium Mavi Tasarım) */
+.contact-box {
+    padding: 40px 20px;
+    background: white;
+    border-radius: 15px; /* Köşeleri yuvarlat */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05); /* Çok hafif gölge */
+    transition: all 0.3s ease;
+    cursor: default;
+    height: 100%;
+}
+
+.contact-box:hover {
+    transform: translateY(-10px); /* Üzerine gelince yukarı kalksın */
+    box-shadow: 0 15px 30px rgba(13, 110, 253, 0.15); /* Mavi gölge parlasın */
+}
+
+.contact-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #0d6efd, #0a58ca); /* Modern Mavi Geçiş */
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin: 0 auto 20px auto;
+    transition: transform 0.3s;
+}
+
+.contact-box:hover .contact-icon {
+    transform: scale(1.1) rotate(10deg); /* Üzerine gelince ikon hafif büyüsün ve dönsün */
+}
+
+/* GENEL RENK DÜZELTMESİ (Siyah Ekran Sorunu İçin) */
+
+/* Sayfanın genel arka planı açık renk, yazılar koyu olsun */
+body {
+    background-color: #f8f9fa !important; /* Açık Gri */
+    color: #212529 !important; /* Koyu Gri Yazı */
+}
+
+/* Tüm Kartlar ve Kutular varsayılan olarak BEYAZ olsun */
+.card, .contact-box, .list-group-item {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid rgba(0,0,0,0.1); /* Hafif çerçeve */
+}
+
+/* Form kutucukları (Inputlar) da beyaz olsun */
+input, textarea, select, .form-control {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #ced4da;
+}
+
+/* Linkler varsayılan olarak siyah/gri olsun (Navbar hariç) */
+a {
+    color: #212529;
+    text-decoration: none;
+}
+
+/* KARANLIK MOD GEÇİŞ EFEKTİ */
+body, .card, .navbar, .form-control, .list-group-item {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Karanlık Modda Kartlar biraz daha belirgin olsun */
+[data-bs-theme="dark"] .card {
+    border: 1px solid #444;
+}
+
+/* Karanlık Modda Input alanları */
+[data-bs-theme="dark"] .form-control {
+    background-color: #2b3035;
+    border-color: #495057;
+    color: #fff;
+}
+
+
+
+/* =========================================
+   ⬆️ YUKARI ÇIK BUTONU (SCROLL TO TOP)
+   ========================================= */
+#scrollTopBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background-color: #0d6efd; /* Bootstrap Mavisi */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 9999; /* Her şeyin üstünde olsun */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Buton Görünür Olduğunda */
+#scrollTopBtn.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Üzerine Gelince */
+#scrollTopBtn:hover {
+    background-color: #0b5ed7; /* Koyu Mavi */
+    transform: translateY(-5px); /* Hafif zıplama */
+    box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
+}
+
+
+/* =========================================
+   🚑 ARAYÜZ DÜZELTMELERİ (Z-INDEX FIX)
+   ========================================= */
+
+/* 1. Duyuru Çubuğu Ayarları */
+#announcement-bar {
+    position: relative; /* Fixed yerine Relative yapıyoruz ki içerik aşağı kaysın */
+    width: 100%;
+    background: linear-gradient(to right, #ff416c, #ff4b2b); /* Kırmızı ton */
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    font-weight: bold;
+    overflow: hidden;
+    z-index: 1000; /* Düşük verelim ki sepetin altında kalsın */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Kayan Yazı Animasyonu İçin */
+.announcement-content {
+    display: inline-block;
+    white-space: nowrap;
+    animation: slide-left 15s linear infinite;
+    padding-left: 100%; /* Sağdan girmesi için */
+}
+
+@keyframes slide-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+}
+
+/* 2. Sepet (Offcanvas) HER ŞEYİN ÜSTÜNDE OLSUN */
+.offcanvas {
+    z-index: 9999 !important; /* En yüksek katman */
+    top: 0 !important; /* Boşluk kalmasın */
+}
+
+/* 3. Offcanvas'ın Arkasındaki Siyah Perde (Backdrop) */
+.offcanvas-backdrop {
+    z-index: 9998 !important; /* Sepetin hemen bir altı */
+}
+
+/* 4. Navbar (Mavi Menü) Düzeni */
+.navbar.sticky-top {
+    z-index: 1020; /* Bootstrap standardı, Duyuru'dan yüksek, Sepetten düşük */
+    top: 0;
+}
+
+
+/* =========================================
+   NAVBAR RENK DÜZELTMESİ (ZORUNLU AYAR)
+   ========================================= */
+
+/* ☀️ GÜNDÜZ MODU (LIGHT) */
+[data-bs-theme="light"] .navbar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+[data-bs-theme="light"] .navbar .navbar-brand,
+[data-bs-theme="light"] .navbar .nav-link,
+[data-bs-theme="light"] .navbar i,
+[data-bs-theme="light"] .navbar .btn-outline-light {
+    color: #000000 !important; /* Yazıları SİYAH yap */
+    border-color: #000000 !important; /* Buton çerçevelerini SİYAH yap */
+}
+
+/* 🌙 GECE MODU (DARK) */
+[data-bs-theme="dark"] .navbar {
+    background-color: #000000 !important;
+    border-bottom: 1px solid #333;
+}
+
+[data-bs-theme="dark"] .navbar .navbar-brand,
+[data-bs-theme="dark"] .navbar .nav-link,
+[data-bs-theme="dark"] .navbar i,
+[data-bs-theme="dark"] .navbar .btn-outline-light {
+    color: #ffffff !important; /* Yazıları BEYAZ yap */
+    border-color: #ffffff !important;
+}
+
+/* Aktif Linkin Rengi (Mavi kalsın) */
+[data-bs-theme="light"] .navbar .nav-link.active,
+[data-bs-theme="dark"] .navbar .nav-link.active {
+    color: #0d6efd !important;
+    font-weight: bold;
+}
+
+
+/* =========================================
+   🕵️‍♂️ ÜRÜN ZOOM (BÜYÜTEÇ) EFEKTLERİ
+   ========================================= */
+
+/* 1. ANASAYFA ÜRÜN KARTLARI */
+.product-card {
+    overflow: hidden; /* Resim büyüdüğünde kartın dışına taşmasını engeller */
+}
+
+.product-card .card-img-top {
+    transition: transform 0.5s ease; /* Büyüme işlemi 0.5 saniyede yumuşakça olsun */
+    transform-origin: center center; /* Büyüme merkezden başlasın */
+}
+
+.product-card:hover .card-img-top {
+    transform: scale(1.1); /* Mouse gelince resmi %10 büyüt */
+}
+
+/* 2. DETAY MODALI (BÜYÜK RESİM) */
+#productModal .modal-body {
+    overflow: hidden; /* Detayda da resim taşmasın */
+    border-radius: 10px; /* Köşeler yumuşak kalsın */
+}
+
+#modal-img {
+    transition: transform 0.4s ease; /* Yumuşak geçiş */
+    cursor: zoom-in; /* Mouse imleci büyüteç şeklini alsın 🔍 */
+}
+
+#modal-img:hover {
+    transform: scale(1.25); /* Detayda resim %25 büyüsün (daha belirgin) */
+}
+
+/* 3. İLGİLİ ÜRÜNLER (RELATED PRODUCTS) */
+.hover-scale .card-img-top {
+    transition: transform 0.3s ease;
+}
+
+.hover-scale:hover .card-img-top {
+    transform: scale(1.1);
+}
