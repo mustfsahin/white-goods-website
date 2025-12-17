@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -31,14 +31,17 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'simple_history',
     'store',   
     'rest_framework', 
+    'rest_framework.authtoken',
     'corsheaders',   
 ]
 
@@ -51,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'eticaret_backend.urls'
@@ -58,7 +62,7 @@ ROOT_URLCONF = 'eticaret_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # 🔥 DÜZELTİLEN SATIR BURASI
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -137,3 +141,23 @@ MEDIA_URL = '/media/'
 
 import os
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # <-- Token'ı tanı
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny', # <-- Siteyi herkese aç (401 hatasını engeller)
+    ],
+}
+
+# JAZZMIN AYARLARI (Admin Paneli Tasarımı)
+JAZZMIN_SETTINGS = {
+    "site_title": "TechnoStore Admin",
+    "site_header": "TechnoStore",
+    "site_brand": "TechnoStore",
+    "welcome_sign": "Welcome Boss! 👋",
+    "copyright": "TechnoStore Ltd.",
+    "search_model": "auth.User",
+}

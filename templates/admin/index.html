@@ -1,0 +1,277 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- Senin Tasarım Kodların --- */
+        body { font-family: 'Inter', sans-serif; }
+        .table-dark td, .table-dark th { vertical-align: middle; border-color: #2c3034; }
+        .product-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; margin-right: 10px; }
+        .badge-status { padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 0.85rem; }
+        .bg-available { background-color: rgba(25, 135, 84, 0.2); color: #198754; } 
+        .bg-unavailable { background-color: rgba(220, 53, 69, 0.2); color: #dc3545; } 
+
+        /* 🔥 NÜKLEER ÇÖZÜM: İsminde 'circle' geçen HER ŞEYİ yok et 🔥 */
+        /* fa-circle, fa-dot-circle, far fa-circle, fas fa-circle HEPSİNİ YAKALAR */
+        .sidebar .nav-icon[class*="fa-circle"] {
+            display: none !important;
+        }
+
+        /* İkonlar gidince yazılar sola yapışmasın diye boşluk ver */
+        .sidebar .nav-treeview > .nav-item > .nav-link {
+            padding-left: 20px !important;
+        }
+    </style>
+    {{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-dark text-white shadow rounded mb-3" style="min-height: 120px;">
+                <div class="card-body d-flex align-items-center">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div style="overflow: hidden;">
+                            <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem;">Total Revenue</h6>
+                            <h3 class="font-weight-bold mb-0 text-nowrap" style="font-size: 1.8rem;">${{ total_earnings }}</h3>
+                        </div>
+                        <div class="bg-success text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 50px; height: 50px; opacity: 0.9;">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white shadow rounded mb-3" style="min-height: 120px;">
+                <div class="card-body d-flex align-items-center">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem;">Total Orders</h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.8rem;">{{ total_orders }}</h3>
+                        </div>
+                        <div class="bg-info text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 50px; height: 50px; opacity: 0.9;">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white shadow rounded mb-3" style="min-height: 120px;">
+                <div class="card-body d-flex align-items-center">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem;">Customers</h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.8rem;">{{ total_customers }}</h3>
+                        </div>
+                        <div class="bg-warning text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 50px; height: 50px; opacity: 0.9;">
+                            <i class="fas fa-users fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white shadow rounded mb-3" style="min-height: 120px;">
+                <div class="card-body d-flex align-items-center">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <div>
+                            <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem;">Pending Orders</h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.8rem;">{{ pending_orders }}</h3>
+                        </div>
+                        <div class="bg-danger text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 50px; height: 50px; opacity: 0.9;">
+                            <i class="fas fa-hourglass-half fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark text-white shadow">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Sales Overview</h4>
+                    <small class="text-muted">Last 10 Orders</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" style="height: 300px; width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div class="card bg-dark text-white shadow h-100">
+                <div class="card-header border-bottom border-secondary">
+                    <h5 class="mb-0">🛒 Recent Sales</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td><a href="/admin/store/order/{{ order.id }}/change/" class="text-info">#{{ order.id }}</a></td>
+                                <td>{{ order.full_name }}</td>
+                                <td>{{ order.created_at|date:"d M" }}</td>
+                                <td class="text-success">${{ order.total_price }}</td>
+                                <td>
+                                    {% if order.status == 'Pending' %} <span class="badge badge-warning">Pending</span>
+                                    {% elif order.status == 'Delivered' %} <span class="badge badge-success">Delivered</span>
+                                    {% elif order.status == 'Cancelled' %} <span class="badge badge-danger">Cancelled</span>
+                                    {% else %} <span class="badge badge-secondary">{{ order.status }}</span> {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center">No orders yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card bg-dark text-white shadow h-100">
+                <div class="card-header border-bottom border-secondary bg-danger">
+                    <h5 class="mb-0 text-white">⚠️ Low Stock Alert</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th class="text-right">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in low_stock_products %}
+                            <tr>
+                                <td><a href="/admin/store/product/{{ product.id }}/change/" class="text-white">{{ product.name }}</a></td>
+                                <td>${{ product.price }}</td>
+                                <td class="text-right"><span class="badge badge-danger" style="font-size: 1rem;">{{ product.stock }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-success">All stocks are good! 🚀</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark text-white shadow">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center pt-3 pb-3">
+                    <h5 class="mb-0 font-weight-bold">Top Selling Items</h5>
+                    <div class="input-group" style="width: 200px;">
+                        <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Search..." style="height: 35px;">
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-dark border-secondary text-white"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" style="background-color: #212529;">
+                        <thead>
+                            <tr style="color: #adb5bd; border-bottom: 2px solid #343a40;">
+                                <th class="pl-4">Product ID</th>
+                                <th>Product Name</th>
+                                <th>Stock</th>
+                                <th>Price</th>
+                                <th>Total Sales</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in top_selling_products %}
+                            <tr>
+                                <td class="pl-4 text-muted font-weight-bold">#PRD{{ item.id }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if item.image %}
+                                            <img src="{{ item.image.url }}" class="product-img" alt="Product">
+                                        {% else %}
+                                            <div class="product-img bg-secondary d-flex justify-content-center align-items-center text-white"><i class="fas fa-box"></i></div>
+                                        {% endif %}
+                                        <span class="ml-2 font-weight-bold">{{ item.name }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ item.stock }}</td>
+                                <td>${{ item.price }}</td>
+                                <td class="font-weight-bold">${{ item.total_revenue|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.stock > 0 %}
+                                        <span class="badge-status bg-available">Available</span>
+                                    {% else %}
+                                        <span class="badge-status bg-unavailable">Not-Available</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4">No sales data yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('salesChart').getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(124, 77, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(124, 77, 255, 0)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ graph_labels|safe }},
+            datasets: [{
+                label: 'Revenue ($)',
+                data: {{ graph_data|safe }},
+                backgroundColor: gradient,
+                borderColor: '#7c4dff',
+                borderWidth: 3,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#7c4dff',
+                pointRadius: 5,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: '#444' }, ticks: { color: '#ccc', beginAtZero: true } },
+                x: { grid: { display: false }, ticks: { color: '#ccc' } }
+            }
+        }
+    });
+</script>
+{% endblock %}
