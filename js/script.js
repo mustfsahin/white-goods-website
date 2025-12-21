@@ -2,6 +2,8 @@
 // 1. API ADRESLERİ & AYARLAR
 // =========================================
 const BASE_URL = 'http://127.0.0.1:8000';
+
+// API Uç Noktaları
 const API_PRODUCTS = `${BASE_URL}/api/products/`;
 const API_CATEGORIES = `${BASE_URL}/api/categories/`;
 const API_CHECKOUT = `${BASE_URL}/api/checkout/`;
@@ -41,7 +43,7 @@ function showToast(message, type = "success") {
             }
         }).showToast();
     } else {
-        alert(message); // Toastify yüklenmezse yedek
+        alert(message);
     }
 }
 
@@ -51,20 +53,26 @@ function showToast(message, type = "success") {
 document.addEventListener('DOMContentLoaded', () => {
     updateCartUI();     
     checkLoginStatus(); 
-    loadAddresses(); 
+    
+    // Adresleri yükle (Sadece giriş yapmışsa ve profil/checkout sayfasındaysa)
+    if (localStorage.getItem('token')) {
+        loadAddresses();
+
+        autoFillContactForm();
+    }
     
     // Ana Sayfa Yüklemeleri
     if(document.getElementById('category-list')) loadCategories();
     if(document.getElementById('product-list')) loadProducts();
 
-    // Detay Sayfası Yüklemeleri
+    // Detay Sayfası
     if (window.location.pathname.includes('detail.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
         if (productId) loadSingleProduct(productId);
     }
 
-    // Checkout Sayfası (Otomatik Doldurma)
+    // Checkout Sayfası
     if (window.location.pathname.includes('checkout.html')) {
         autoFillCheckout(); 
     }
@@ -83,15 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
-// 3. KULLANICI İŞLEMLERİ (AUTH)
+// 3. KULLANICI İŞLEMLERİ (AUTH) - DÜZELTİLDİ
 // =========================================
 
 function checkLoginStatus() {
     const userArea = document.getElementById('user-area');
     if (!userArea) return; 
 
-    const token = localStorage.getItem('userToken');
-    const fullName = localStorage.getItem('fullName');
+    // 🔥 DÜZELTME: Token ismi standartlaştırıldı ('token')
+    const token = localStorage.getItem('token');
+    const fullName = localStorage.getItem('full_name') || localStorage.getItem('username');
 
     if (token && fullName) {
         // 🔥 GİRİŞ YAPILMIŞSA
@@ -117,12 +126,67 @@ function checkLoginStatus() {
     }
 }
 
+// 🔐 GİRİŞ YAPMA (Senin HTML ID'lerine göre uyarlandı)
+async function loginUser() {
+    const usernameInput = document.getElementById('loginUsername');
+    const passwordInput = document.getElementById('loginPassword');
+
+    if (!usernameInput || !passwordInput) {
+        // Eğer login.html'de değilsek hata vermesin diye sessizce çık
+        return;
+    }
+
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+
+    if (!username || !password) {
+        showToast("Please fill in all fields! ⚠️", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(API_LOGIN, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // 🔥 KRİTİK: Token ve İsim Kaydı
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('full_name', data.full_name);
+
+            showToast(`Login Successful! Redirecting... 🚀`, "success");
+            
+            // 1 saniye sonra ana sayfaya at
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 1000);
+        } else {
+            showToast(data.error || "Login failed! ❌", "error");
+        }
+    } catch (error) {
+        console.error("Login Error:", error);
+        showToast("Server connection error!", "error");
+    }
+}
+
+// 📝 KAYIT OLMA (Senin HTML ID'lerine göre uyarlandı)
 async function registerUser() {
+    // HTML'deki ID'ler: regUsername, regEmail, regPassword, regName, regSurname
     const u = document.getElementById('regUsername').value;
     const e = document.getElementById('regEmail').value;
     const p = document.getElementById('regPassword').value;
     const f = document.getElementById('regName').value;
     const l = document.getElementById('regSurname').value;
+
+    if(!u || !e || !p) {
+        showToast("Please fill required fields!", "error");
+        return;
+    }
 
     try {
         const res = await fetch(API_REGISTER, { 
@@ -131,59 +195,35 @@ async function registerUser() {
             body: JSON.stringify({username:u, email:e, password:p, first_name:f, last_name:l})
         });
         
+        const data = await res.json();
+
         if(res.ok) { 
-            showToast("✅ Registration Successful! Please login.", "success"); 
-            document.getElementById('pills-login-tab').click(); 
-        } else { 
-            showToast("❌ Registration failed! Check your details.", "error"); 
-        }
-    } catch(e) { console.error(e); showToast("Server error!", "error"); }
-}
+            // Kayıt başarılıysa direkt giriş yapmış sayalım
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            localStorage.setItem('full_name', data.full_name);
 
-async function loginUser() {
-    const u = document.getElementById('loginUsername').value;
-    const p = document.getElementById('loginPassword').value;
-
-    try {
-        const res = await fetch(API_LOGIN, { 
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify({username:u, password:p})
-        });
-        const result = await res.json();
-
-        if(res.ok) {
-            localStorage.setItem('userToken', result.token);
-            localStorage.setItem('fullName', result.full_name);
-            localStorage.setItem('username', result.username); 
-            showToast("👋 Welcome back, " + result.full_name, "success");
+            showToast("✅ Registration Successful! Redirecting...", "success"); 
             setTimeout(() => { window.location.href = "index.html"; }, 1000);
-        } else {
-            showToast("❌ Login failed: " + result.error, "error");
+        } else { 
+            showToast("❌ Registration failed! " + (data.error || ""), "error"); 
         }
     } catch(e) { console.error(e); showToast("Server error!", "error"); }
 }
 
 function logoutUser() {
-    const userArea = document.getElementById('user-area');
-    if (userArea) {
-        userArea.innerHTML = `
-            <div class="d-flex align-items-center gap-2">
-                <div class="spinner-border spinner-border-sm" role="status"></div>
-                <span>Bye Bye... 👋</span>
-            </div>
-        `;
-    }
-    localStorage.removeItem('userToken');
+    localStorage.removeItem('token');
     localStorage.removeItem('username');
-    localStorage.removeItem('fullName');
+    localStorage.removeItem('full_name');
+    localStorage.removeItem('full_address'); // Varsa temizle
     localStorage.removeItem('cart'); 
+    
     showToast("Logged out successfully 👋", "success");
-    setTimeout(() => { window.location.href = "index.html"; }, 1500);
+    setTimeout(() => { window.location.href = "index.html"; }, 1000);
 }
 
 function autoFillCheckout() {
-    const fullName = localStorage.getItem('fullName');
+    const fullName = localStorage.getItem('full_name');
     if (fullName) {
         const nameInput = document.getElementById('fullName');
         if(nameInput && !nameInput.value) nameInput.value = fullName;
@@ -223,20 +263,15 @@ function loadSingleProduct(id) {
             document.getElementById('detail-price').innerText = "$" + product.price;
             document.getElementById('detail-img').src = img;
             
+            // --- STOK VE SEPET BUTONU ---
             const stockLabel = document.getElementById('detail-stock');
             const btn = document.getElementById('detail-btn');
             
-            // Stok ve Buton Mantığı
             if(product.stock < 1) {
                 stockLabel.className = 'badge bg-secondary'; stockLabel.innerText = 'Out of Stock';
                 btn.disabled = true; btn.innerText = 'Out of Stock';
             } else {
-                if(product.stock < 10) {
-                    stockLabel.className = 'badge bg-warning text-dark'; stockLabel.innerText = 'Low Stock!';
-                } else {
-                    stockLabel.className = 'badge bg-success'; stockLabel.innerText = 'In Stock';
-                }
-                
+                stockLabel.className = 'badge bg-success'; stockLabel.innerText = 'In Stock';
                 btn.onclick = () => {
                     const qtyInput = document.getElementById('product-qty');
                     const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
@@ -244,9 +279,27 @@ function loadSingleProduct(id) {
                 };
             }
 
+            // 🔥 YENİ: FAVORİ (WISHLIST) BUTONU AYARI 🔥
+            const favBtn = document.getElementById('detail-fav-btn'); 
+            if (favBtn) {
+                // 1. Önce bu ürün favoride mi kontrol et
+                const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+                if (favorites.includes(String(product.id))) {
+                    favBtn.innerHTML = '<i class="bi bi-heart-fill text-danger"></i>'; // Dolu kalp
+                } else {
+                    favBtn.innerHTML = '<i class="bi bi-heart"></i>'; // Boş kalp
+                }
+
+                // 2. Tıklama özelliğini ver
+                favBtn.onclick = function() {
+                    toggleFavorite(product.id, this);
+                };
+            }
+
             document.getElementById('loading').classList.add('d-none');
             document.getElementById('product-content').classList.remove('d-none');
 
+            // Benzer ürünler
             const related = data.filter(p => p.category == product.category && p.id != id);
             renderRelatedProducts(related.slice(0, 4));
 
@@ -256,26 +309,23 @@ function loadSingleProduct(id) {
 }
 
 function renderRelatedProducts(products) {
-    const area = document.getElementById('related-area');
     const list = document.getElementById('related-list');
-    if (!area || !list) return;
-
+    if (!list) return;
     if (products.length > 0) {
-        area.classList.remove('d-none');
+        document.getElementById('related-area').classList.remove('d-none');
         list.innerHTML = "";
         products.forEach(p => {
             let img = p.image ? (p.image.startsWith('http') ? p.image : BASE_URL + p.image) : 'https://via.placeholder.com/300';
             list.innerHTML += `
                 <div class="col-md-3 col-6">
-                    <div class="card h-100 shadow-sm hover-scale">
+                    <div class="card h-100 shadow-sm">
                         <a href="detail.html?id=${p.id}"><img src="${img}" class="card-img-top" style="height: 150px; object-fit: contain;"></a>
                         <div class="card-body p-2 text-center">
                             <h6 class="card-title text-truncate"><a href="detail.html?id=${p.id}" class="text-decoration-none text-dark">${p.name}</a></h6>
                             <span class="text-primary fw-bold">$${p.price}</span>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     }
 }
@@ -285,47 +335,53 @@ function renderProducts(products) {
     const countLabel = document.getElementById('result-count');
     if(!list) return;
     
+    // 🔥 ÖNEMLİ: Önce favorileri hafızadan çekelim
+    const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
     if(products.length === 0) {
-        list.innerHTML = '<div class="alert alert-warning text-center w-100">No products found for this filter.</div>';
-        countLabel.innerText = "0 found"; return;
+        list.innerHTML = '<div class="alert alert-warning text-center w-100">No products found.</div>';
+        if(countLabel) countLabel.innerText = "0 found"; 
+        return;
     }
+
     list.innerHTML = "";
-    countLabel.innerText = `Showing ${products.length} products`;
+    if(countLabel) countLabel.innerText = `Showing ${products.length} products`;
 
     products.forEach(p => {
         let img = p.image ? (p.image.startsWith('http') ? p.image : BASE_URL + p.image) : 'https://via.placeholder.com/300';
-        let stokRozeti = p.stock === 0 ? '<span class="badge bg-secondary position-absolute top-0 start-0 m-2 z-2">Sold Out</span>' : '';
-        let butonDurumu = p.stock === 0 ? 'disabled' : `onclick="addToCart('${p.name}', ${p.price}, '${img}')"`;
-        let butonText = p.stock === 0 ? 'No Stock' : 'Add +';
-        let butonClass = p.stock === 0 ? 'btn-secondary' : 'btn-outline-primary';
+        
+        // Stok Durumu
+        let btnState = p.stock === 0 ? 'disabled' : `onclick="addToCart('${p.name}', ${p.price}, '${img}')"`;
+        let btnText = p.stock === 0 ? 'No Stock' : 'Add +';
+        let stockBadge = p.stock === 0 ? '<span class="badge bg-secondary position-absolute top-0 start-0 m-2 z-2">Sold Out</span>' : '';
+
+        // 🔥 FAVORİ KONTROLÜ (KALP KIRMIZI MI OLSUN?)
+        let isFav = favorites.includes(String(p.id));
+        let heartIcon = isFav ? 'bi-heart-fill text-danger' : 'bi-heart'; // Dolu veya Boş kalp ikonu
 
         list.innerHTML += `
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm position-relative product-card">
-                    ${stokRozeti}
+                <div class="card h-100 shadow-sm product-card position-relative">
+                    ${stockBadge}
+                    
                     <button class="btn btn-light rounded-circle position-absolute top-0 end-0 m-2 shadow-sm fav-btn z-3" 
                         data-id="${p.id}" onclick="toggleFavorite(${p.id}, this)">
-                        <i class="bi bi-heart"></i>
+                        <i class="bi ${heartIcon}"></i>
                     </button>
+
                     <a href="detail.html?id=${p.id}"><img src="${img}" class="card-img-top"></a>
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title fw-bold text-truncate"><a href="detail.html?id=${p.id}" class="text-decoration-none text-dark">${p.name}</a></h5>
                         <p class="text-muted small mb-3">${p.description.substring(0, 60)}...</p>
-                        <div class="mt-auto">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-primary fw-bold fs-5">$${p.price}</span>
-                                <button class="btn ${butonClass} btn-sm rounded-pill px-3" ${butonDurumu}>${butonText}</button>
-                            </div>
-                            
-                            <button class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="toggleCompare(${p.id})">
-                                <i class="bi bi-arrow-left-right"></i> Compare
-                            </button>
+                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                            <span class="text-primary fw-bold fs-5">$${p.price}</span>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3" ${btnState}>${btnText}</button>
                         </div>
+                        <button class="btn btn-sm btn-light w-100 mt-2" onclick="toggleCompare(${p.id})">Compare</button>
                     </div>
                 </div>
             </div>`;
     });
-    updateFavoriteIcons();
 }
 
 function filterProducts(catId, btn) {
@@ -335,70 +391,31 @@ function filterProducts(catId, btn) {
     applyPriceFilter();
 }
 
-function sortProducts(criteria) {
-    let list = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category == currentCategory);
-    
-    if(criteria === 'price-asc') list.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-    if(criteria === 'price-desc') list.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-    if(criteria === 'name-asc') list.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-    if(criteria === 'name-desc') list.sort((a, b) => b.name.toLowerCase().localeCompare(a.name.toLowerCase()));
-    if(criteria === 'newest') list.sort((a, b) => b.id - a.id);
-    
-    renderProducts(list);
+function applyPriceFilter() {
+    let min = parseFloat(document.getElementById('min-price').value) || 0;
+    let max = parseFloat(document.getElementById('max-price').value) || Infinity;
+
+    let filtered = allProducts;
+    if (currentCategory !== 'all') {
+        filtered = allProducts.filter(p => p.category == currentCategory);
+    }
+    filtered = filtered.filter(p => parseFloat(p.price) >= min && parseFloat(p.price) <= max);
+    renderProducts(filtered);
 }
 
-function applyPriceFilter() {
-    let min = document.getElementById('min-price').value;
-    let max = document.getElementById('max-price').value;
-
-    min = min ? parseFloat(min) : 0;
-    max = max ? parseFloat(max) : Infinity;
-
-    let filteredList = [];
-
-    if (currentCategory === 'all') {
-        filteredList = allProducts;
-    } else {
-        filteredList = allProducts.filter(p => p.category == currentCategory);
-    }
-
-    filteredList = filteredList.filter(p => {
-        let price = parseFloat(p.price);
-        return price >= min && price <= max;
-    });
-
-    renderProducts(filteredList);
+function searchProduct(keyword) {
+    if (!keyword) { applyPriceFilter(); return; }
+    const lower = keyword.toLowerCase();
+    const filtered = allProducts.filter(p => p.name.toLowerCase().includes(lower));
+    renderProducts(filtered);
 }
 
 function resetFilters() {
     currentCategory = 'all';
-    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-    const allBtn = document.querySelector('.category-btn');
-    if(allBtn) allBtn.classList.add('active');
-
     document.getElementById('min-price').value = '';
     document.getElementById('max-price').value = '';
-    
-    const searchInput = document.querySelector('input[type="search"]');
-    if (searchInput) searchInput.value = '';
-
+    loadCategories();
     renderProducts(allProducts);
-    showToast("Filters reset! 🔄", "success");
-}
-
-function searchProduct(keyword) {
-    let listToSearch = [];
-    if (currentCategory === 'all') { listToSearch = allProducts; } 
-    else { listToSearch = allProducts.filter(p => p.category == currentCategory); }
-
-    if (!keyword) { renderProducts(listToSearch); return; }
-
-    const lowerKeyword = keyword.toLowerCase();
-    const filteredList = listToSearch.filter(p => 
-        p.name.toLowerCase().includes(lowerKeyword) || 
-        p.description.toLowerCase().includes(lowerKeyword)
-    );
-    renderProducts(filteredList);
 }
 
 // =========================================
@@ -409,51 +426,68 @@ function addToCart(name, price, image, quantity = 1) {
     for (let i = 0; i < quantity; i++) {
         cart.push({name, price, image});
     }
-    
     saveCart(); 
     updateCartUI();
-    new bootstrap.Offcanvas(document.getElementById('cartCanvas')).show();
-    
-    if (quantity > 1) {
-        showToast(`${quantity} items added to Cart! 🛒`, "success");
-    } else {
-        showToast("Added to Cart! 🛒", "success");
-    }
+    const cartCanvas = document.getElementById('cartCanvas');
+    if(cartCanvas) new bootstrap.Offcanvas(cartCanvas).show();
+    showToast("Added to Cart! 🛒", "success");
 }
 
+// =========================================
+// 🛒 SEPET GÜNCELLEME & KARGO BARI
+// =========================================
 function updateCartUI() {
     const list = document.getElementById('cart-items');
-    const cartCount = document.getElementById('cart-count');
     const cartTotal = document.getElementById('cart-total');
+    const cartCount = document.getElementById('cart-count');
+    
+    // 🔥 KARGO BARI ELEMENTLERİ
     const shippingBar = document.getElementById('shipping-bar');
     const shippingMsg = document.getElementById('shipping-msg');
-    const FREE_SHIPPING_LIMIT = 2000; 
+    const FREE_SHIPPING_LIMIT = 2000; // Kargo limiti ($)
 
     if (!list) return;
 
+    // Listeyi Temizle
     list.innerHTML = cart.length ? '' : '<div class="text-center text-muted mt-5"><p>Cart is empty</p></div>';
     let total = 0;
 
+    // Ürünleri Listele ve Toplamı Hesapla
     cart.forEach((item, i) => {
         total += parseFloat(item.price);
         list.innerHTML += `
             <li class="list-group-item d-flex justify-content-between align-items-center mb-2 border">
-                <div class="d-flex align-items-center"><img src="${item.image}" width="40" class="me-2 rounded"><div><h6 class="mb-0 text-truncate" style="max-width:120px">${item.name}</h6><small class="text-primary">$${item.price}</small></div></div>
+                <div class="d-flex align-items-center">
+                    <img src="${item.image}" width="40" class="me-2 rounded">
+                    <div>
+                        <h6 class="mb-0 text-truncate" style="max-width:120px">${item.name}</h6>
+                        <small class="text-primary">$${item.price}</small>
+                    </div>
+                </div>
                 <button class="btn btn-sm text-danger" onclick="rem(${i})">X</button>
             </li>`;
     });
 
+    // Toplam Fiyat ve Adet Güncelleme
     if (cartTotal) cartTotal.innerText = '$' + total.toFixed(2);
     if (cartCount) cartCount.innerText = cart.length;
 
+    // 🔥 KARGO BARINI HESAPLA VE GÜNCELLE
     if (shippingBar && shippingMsg) {
         let percent = (total / FREE_SHIPPING_LIMIT) * 100;
+        
+        // Yüzde 100'ü geçmesin
         if (percent > 100) percent = 100;
+        
+        // Barın Genişliğini Ayarla
         shippingBar.style.width = percent + "%";
+
         if (total >= FREE_SHIPPING_LIMIT) {
+            // LİMİT GEÇİLDİ (YEŞİL BAR)
             shippingBar.className = "progress-bar bg-success"; 
             shippingMsg.innerHTML = `🎉 Congratulations! <strong>Free Shipping</strong> unlocked!`;
         } else {
+            // LİMİT GEÇİLMEDİ (SARI BAR)
             let remaining = FREE_SHIPPING_LIMIT - total;
             shippingBar.className = "progress-bar progress-bar-striped progress-bar-animated bg-warning"; 
             shippingMsg.innerHTML = `Spend <strong class="text-danger">$${remaining.toFixed(2)}</strong> more for Free Shipping 🚚`;
@@ -462,62 +496,43 @@ function updateCartUI() {
 }
 
 function saveCart() { localStorage.setItem('cart', JSON.stringify(cart)); }
-function rem(i) { cart.splice(i, 1); saveCart(); updateCartUI(); showToast("Removed from cart 🗑️", "error"); }
-function clearCart() { cart = []; saveCart(); updateCartUI(); showToast("Cart cleared! 🧹", "error"); }
+function rem(i) { cart.splice(i, 1); saveCart(); updateCartUI(); }
+function clearCart() { cart = []; saveCart(); updateCartUI(); }
 
 function checkout() {
-    if (cart.length === 0) { showToast("Cart is empty! ⚠️", "error"); return; }
+    if (cart.length === 0) { showToast("Cart is empty!", "error"); return; }
+    // Token kontrolü: Eğer giriş yapmamışsa uyarı ver
+    if (!localStorage.getItem('token')) {
+        showToast("Please LOGIN to checkout!", "error");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+    }
     window.location.href = "checkout.html";
 }
 
 async function completeOrder() {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
     if (!token) {
-        showToast("Lütfen önce giriş yapın!", "error");
+        showToast("Please log in first!!", "error");
         setTimeout(() => window.location.href = "login.html", 2000);
         return;
     }
 
-    const fullNameInput = document.getElementById('fullName');
-    const firstNameInput = document.getElementById('firstName');
-    const lastNameInput = document.getElementById('lastName');
-    
-    let fullName = "";
-    if (fullNameInput) {
-        fullName = fullNameInput.value;
-    } else if (firstNameInput && lastNameInput) {
-        fullName = `${firstNameInput.value} ${lastNameInput.value}`;
-    }
-
+    const fullName = document.getElementById('fullName').value;
     const phone = document.getElementById('phone')?.value || "";
     const address = document.getElementById('address')?.value || "";
     const couponCode = document.getElementById('couponCode')?.value || null;
 
     if (!fullName || !phone || !address) {
-        showToast("Lütfen İsim, Telefon ve Adres alanlarını doldurun!", "error");
+        showToast("Please fill in the Name, Phone Number, and Address fields!", "error");
         return;
     }
 
-    if (cart.length === 0) {
-        showToast("Sepetiniz boş!", "error");
-        return;
-    }
-
-    let originalTotal = cart.reduce((acc, item) => acc + parseFloat(item.price), 0);
-    const submitBtn = document.querySelector('button[onclick="completeOrder()"]');
-    const originalText = submitBtn ? submitBtn.innerHTML : "Complete Order";
-    if(submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Kupon Kontrol Ediliyor...';
-    }
-
-    const payload = {
-        full_name: fullName,
-        address: address,
-        phone: phone,
-        items: cart,
-        coupon_code: couponCode
-    };
+    // Backend'e gönderilecek ürün listesi
+    const itemsPayload = cart.map(item => ({
+        name: item.name, 
+        price: item.price
+    }));
 
     try {
         const res = await fetch(API_CHECKOUT, {
@@ -526,60 +541,30 @@ async function completeOrder() {
                 'Content-Type': 'application/json',
                 'Authorization': `Token ${token}`
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                full_name: fullName,
+                address: address,
+                phone: phone,
+                items: itemsPayload,
+                coupon_code: couponCode
+            })
         });
 
         const data = await res.json();
 
         if (res.ok) {
-            if (data.final_price && parseFloat(data.final_price) < originalTotal) {
-                const totalEl = document.getElementById('checkout-total');
-                if (totalEl) {
-                    totalEl.innerHTML = `
-                        <div class="d-flex flex-column align-items-end">
-                            <small class="text-muted text-decoration-line-through me-2">$${originalTotal.toFixed(2)}</small>
-                            <span class="text-success fw-bold fs-3">$${data.final_price}</span>
-                            <span class="badge bg-success mt-1">🎉 KUPON UYGULANDI!</span>
-                        </div>
-                    `;
-                }
-                showToast(`🎉 İndirim Uygulandı! Yeni Tutar: $${data.final_price}`, "success");
-            } else {
-                showToast("✅ Siparişiniz Alındı!", "success");
-            }
-
-            if(submitBtn) {
-                submitBtn.className = "w-100 btn btn-success btn-lg rounded-pill shadow fw-bold py-3";
-                submitBtn.innerHTML = `SİPARİŞ ONAYLANDI! 🚀`;
-            }
-
+            showToast("✅ Order successful! Thank you.", "success");
             localStorage.removeItem('cart'); 
             updateCartUI();
             
-            setTimeout(() => {
-                window.location.href = "profile.html"; 
-            }, 3000);
-
+            // Profil sayfasına yönlendir
+            setTimeout(() => { window.location.href = "profile.html"; }, 2000);
         } else {
-            console.error("Sipariş Hatası:", data);
-            let errorMsg = data.error || "Bilinmeyen hata";
-            if (errorMsg.includes("Coupon")) {
-                showToast("⚠️ " + errorMsg, "error");
-            } else {
-                showToast("Hata: " + errorMsg, "error");
-            }
-            if(submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
+            showToast("Error: " + (data.error || "Operation failed"), "error");
         }
     } catch (e) {
-        console.error("Bağlantı Hatası:", e);
-        showToast("Sunucuyla iletişim kurulamadı!", "error");
-        if(submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        }
+        console.error(e);
+        showToast("Server error!", "error");
     }
 }
 
@@ -589,25 +574,24 @@ async function completeOrder() {
 
 async function loadMyOrders() {
     const username = localStorage.getItem('username');
-    const fullName = localStorage.getItem('fullName');
+    if (!username) return;
 
-    if (!username) { showToast("Please login to view orders", "error"); window.location.href = 'login.html'; return; }
-
-    const profileName = document.getElementById('profile-name');
-    const profileUser = document.getElementById('profile-username');
-    
-    if(profileName) profileName.innerText = fullName;
-    if(profileUser) profileUser.innerText = "@" + username;
+    // Profil başlığını doldur
+    const pName = document.getElementById('profile-name');
+    const pUser = document.getElementById('profile-username');
+    if(pName) pName.innerText = localStorage.getItem('full_name');
+    if(pUser) pUser.innerText = "@" + username;
 
     try {
         const response = await fetch(`${API_MY_ORDERS}?username=${username}`, {
-             headers: { 'Authorization': `Token ${localStorage.getItem('userToken')}` }
+             headers: { 'Authorization': `Token ${localStorage.getItem('token')}` }
         });
         const orders = await response.json();
         const list = document.getElementById('ordersAccordion');
         
+        if (!list) return;
         if(document.getElementById('loading-orders')) document.getElementById('loading-orders').classList.add('d-none');
-
+        
         if (orders.length === 0) { 
             if(document.getElementById('no-orders')) document.getElementById('no-orders').classList.remove('d-none'); 
             return; 
@@ -617,40 +601,27 @@ async function loadMyOrders() {
         orders.forEach((order, index) => {
             let itemRows = "";
             order.items.forEach(item => {
-                let imgPath = item.product_image;
-                if(imgPath && !imgPath.startsWith('http')) imgPath = BASE_URL + imgPath;
-                else if (!imgPath) imgPath = 'https://via.placeholder.com/50';
-
-                itemRows += `
-                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                        <div class="d-flex align-items-center">
-                            <img src="${imgPath}" width="60" class="rounded border me-3">
-                            <div><h6 class="mb-0 fw-bold">${item.product_name}</h6><small class="text-muted">Quantity: ${item.quantity}</small></div>
-                        </div>
-                        <span class="fw-bold text-dark">$${item.product_price}</span>
-                    </div>`;
+                itemRows += `<div>${item.product_name} x${item.quantity} - $${item.product_price}</div>`;
             });
 
             list.innerHTML += `
-                <div class="accordion-item border-0 mb-3 shadow-sm rounded overflow-hidden">
+                <div class="accordion-item mb-2">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#order${index}">
-                            <div class="d-flex justify-content-between w-100 me-3 align-items-center">
-                                <div><span class="badge bg-primary me-2">Order #${order.id}</span><span class="text-muted small">${new Date(order.created_at).toLocaleDateString()}</span></div>
-                                <span class="fw-bold text-success fs-5">$${order.total_price}</span>
-                            </div>
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#order${index}">
+                            Order #${order.id} - $${order.total_price}
                         </button>
                     </h2>
                     <div id="order${index}" class="accordion-collapse collapse" data-bs-parent="#ordersAccordion">
-                        <div class="accordion-body bg-light">
-                            <h6 class="text-muted mb-3 small fw-bold">ITEMS:</h6>
+                        <div class="accordion-body">
+                            <strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString()}<br>
+                            <strong>Status:</strong> ${order.status}<br>
+                            <hr>
                             ${itemRows}
-                            <div class="text-end mt-2"><small class="text-muted">Address: ${order.address}</small></div>
                         </div>
                     </div>
                 </div>`;
         });
-    } catch (error) { console.error(error); showToast("Failed to load orders.", "error"); }
+    } catch (error) { console.error(error); }
 }
 
 function toggleFavorite(id, btn) {
@@ -658,19 +629,26 @@ function toggleFavorite(id, btn) {
     const strId = String(id);
 
     if (favorites.includes(strId)) {
+        // ÇIKAR
         favorites = favorites.filter(favId => favId !== strId);
-        btn.innerHTML = '<i class="bi bi-heart"></i>';
-        btn.classList.remove('text-danger');
         showToast("Removed from Wishlist 💔", "error");
+        // Butonu boş kalp yap
+        if(btn) btn.innerHTML = '<i class="bi bi-heart"></i>';
+        if(btn) btn.classList.remove('text-danger');
     } else {
+        // EKLE
         favorites.push(strId);
-        btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
-        btn.classList.add('text-danger');
-        btn.classList.add('animate-heart');
-        setTimeout(() => btn.classList.remove('animate-heart'), 300);
         showToast("Added to Wishlist ❤️", "success");
+        // Butonu dolu kalp yap
+        if(btn) btn.innerHTML = '<i class="bi bi-heart-fill text-danger"></i>';
     }
+    
     localStorage.setItem('favorites', JSON.stringify(favorites));
+    
+    // Diğer butonları da güncelle (Mesela listedekileri)
+    updateFavoriteIcons();
+    
+    // Eğer favoriler sayfasındaysan listeyi yenile
     if(document.getElementById('favorites-list')) loadMyFavorites();
 }
 
@@ -679,11 +657,9 @@ function updateFavoriteIcons() {
     document.querySelectorAll('.fav-btn').forEach(btn => {
         const id = String(btn.getAttribute('data-id'));
         if (favorites.includes(id)) {
-            btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
-            btn.classList.add('text-danger');
+            btn.innerHTML = '<i class="bi bi-heart-fill text-danger"></i>';
         } else {
             btn.innerHTML = '<i class="bi bi-heart"></i>';
-            btn.classList.remove('text-danger');
         }
     });
 }
@@ -695,30 +671,34 @@ function loadMyFavorites() {
     const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
     
     if (favorites.length === 0) {
-        list.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-heartbreak display-1"></i><p class="mt-3">No favorites yet.</p></div>';
+        list.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-heartbreak display-4"></i><p class="mt-2">No favorites yet.</p></div>';
         return;
     }
 
-    list.innerHTML = '<div class="text-center"><div class="spinner-border text-danger"></div></div>';
+    // Yükleniyor ikonu (opsiyonel)
+    list.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
 
     fetch(API_PRODUCTS).then(res => res.json()).then(data => {
         const favProducts = data.filter(p => favorites.includes(String(p.id)));
         list.innerHTML = "";
+        
         favProducts.forEach(p => {
             let img = p.image ? (p.image.startsWith('http') ? p.image : BASE_URL + p.image) : 'https://via.placeholder.com/100';
+            
             list.innerHTML += `
-                <div class="col-md-6 col-lg-4 mb-3">
+                <div class="col-6 col-md-4 col-lg-3 mb-3">
                     <div class="card h-100 shadow-sm border-0">
-                        <div class="position-relative">
-                            <img src="${img}" class="card-img-top" style="height: 150px; object-fit: contain;">
-                            <button class="btn btn-light rounded-circle position-absolute top-0 end-0 m-2 shadow-sm text-danger" onclick="toggleFavorite(${p.id}, this)">
-                                <i class="bi bi-trash"></i>
+                        <div class="card-body p-3 text-center d-flex flex-column">
+                            
+                            <a href="detail.html?id=${p.id}" class="text-decoration-none text-dark mb-2">
+                                <img src="${img}" class="img-fluid mb-2" style="height: 120px; object-fit: contain;">
+                                <h6 class="card-title text-truncate small fw-bold">${p.name}</h6>
+                                <span class="text-primary fw-bold">$${p.price}</span>
+                            </a>
+                            
+                            <button class="btn btn-sm btn-outline-danger w-100 mt-auto" onclick="toggleFavorite(${p.id}, this)">
+                                <i class="bi bi-trash"></i> Remove
                             </button>
-                        </div>
-                        <div class="card-body text-center p-2">
-                            <h6 class="card-title text-truncate fw-bold"><a href="detail.html?id=${p.id}" class="text-dark text-decoration-none">${p.name}</a></h6>
-                            <span class="text-primary fw-bold">$${p.price}</span>
-                            <button class="btn btn-sm btn-outline-primary w-100 mt-2 rounded-pill" onclick="addToCart('${p.name}', ${p.price}, '${img}')">Add to Cart</button>
                         </div>
                     </div>
                 </div>`;
@@ -727,42 +707,24 @@ function loadMyFavorites() {
 }
 
 // =========================================
-// ⭐ YORUM SİSTEMİ (REVIEWS)
+// ⭐ YORUM SİSTEMİ
 // =========================================
-
 function loadReviews(productId) {
     const list = document.getElementById('reviews-list');
-    const countLabel = document.getElementById('review-count');
     if (!list) return;
 
     fetch(`${API_REVIEWS}?product_id=${productId}`)
         .then(res => res.json())
         .then(data => {
-            if (data.length > 0) {
-                list.innerHTML = "";
-                if(countLabel) countLabel.innerText = data.length;
-                
-                data.forEach(r => {
-                    let stars = "";
-                    for(let i=0; i<5; i++) {
-                        stars += i < r.rating ? '<i class="bi bi-star-fill text-warning"></i>' : '<i class="bi bi-star text-muted"></i>';
-                    }
-
-                    list.innerHTML += `
-                        <div class="mb-3 border-bottom pb-2">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-bold"><i class="bi bi-person-circle"></i> ${r.username}</span>
-                                <small class="text-muted">${new Date(r.created_at).toLocaleDateString()}</small>
-                            </div>
-                            <div class="mb-1">${stars}</div>
-                            <p class="text-muted mb-0">${r.comment}</p>
-                        </div>
-                    `;
-                });
-            } else {
-                list.innerHTML = '<div class="text-center text-muted mt-4">No reviews yet. Be the first! 🚀</div>';
-                if(countLabel) countLabel.innerText = "0";
-            }
+            list.innerHTML = "";
+            if (data.length === 0) list.innerHTML = "<p>No reviews yet.</p>";
+            data.forEach(r => {
+                list.innerHTML += `
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>${r.username}</strong> <span class="text-warning">(${r.rating}★)</span>
+                        <p class="mb-0 text-muted">${r.comment}</p>
+                    </div>`;
+            });
         });
 }
 
@@ -771,11 +733,10 @@ async function submitReview() {
     const productId = urlParams.get('id');
     const rating = document.getElementById('review-rating').value;
     const comment = document.getElementById('review-text').value;
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
 
     if (!token) {
         showToast("Please login to write a review!", "error");
-        setTimeout(() => window.location.href = "login.html", 2000);
         return;
     }
 
@@ -786,115 +747,82 @@ async function submitReview() {
                 'Content-Type': 'application/json',
                 'Authorization': `Token ${token}`
             },
-            body: JSON.stringify({
-                product_id: productId,
-                rating: rating,
-                comment: comment
-            })
+            body: JSON.stringify({ product_id: productId, rating, comment })
         });
-
         if (res.ok) {
-            showToast("Review submitted! Thank you ⭐", "success");
-            document.getElementById('review-text').value = ""; 
-            loadReviews(productId); 
+            showToast("Review submitted!", "success");
+            loadReviews(productId);
+            document.getElementById('review-text').value = "";
         } else {
-            const err = await res.json();
-            showToast("Error: " + (err.error || "Failed"), "error");
+            showToast("Failed to submit review", "error");
         }
-    } catch (e) {
-        console.error(e);
-        showToast("Server error!", "error");
-    }
+    } catch (e) { console.error(e); }
 }
 
 // =========================================
 // 🌙 KARANLIK MOD & İLETİŞİM
 // =========================================
-
 function toggleTheme() {
     const htmlEl = document.documentElement;
-    const currentTheme = htmlEl.getAttribute('data-bs-theme');
-    if (currentTheme === 'dark') setTheme('light');
+    if (htmlEl.getAttribute('data-bs-theme') === 'dark') setTheme('light');
     else setTheme('dark');
 }
 
 function setTheme(mode) {
     const htmlEl = document.documentElement;
+    htmlEl.setAttribute('data-bs-theme', mode);
+    localStorage.setItem('theme', mode);
     const themeBtn = document.getElementById('theme-btn');
-    const nav = document.querySelector('nav');
-    const footer = document.querySelector('footer');
-
-    if (mode === 'dark') {
-        htmlEl.setAttribute('data-bs-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        if(themeBtn) themeBtn.innerHTML = '<i class="bi bi-sun-fill"></i>';
-        
-        if (nav) { 
-            nav.classList.remove('bg-white', 'navbar-light'); 
-            nav.classList.add('bg-dark', 'navbar-dark'); 
-        }
-        if (footer) { 
-            footer.classList.remove('bg-light'); 
-            footer.classList.add('bg-black', 'text-white'); 
-        }
-
-    } else {
-        htmlEl.setAttribute('data-bs-theme', 'light');
-        localStorage.setItem('theme', 'light');
-        if(themeBtn) themeBtn.innerHTML = '<i class="bi bi-moon-stars-fill"></i>';
-        
-        if (nav) { 
-            nav.classList.remove('bg-dark', 'navbar-dark', 'bg-primary'); 
-            nav.classList.add('bg-white', 'navbar-light'); 
-        }
-        if (footer) { 
-             footer.classList.add('bg-dark', 'text-white');
-        }
-    }
+    if(themeBtn) themeBtn.innerHTML = mode === 'dark' ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-stars-fill"></i>';
 }
 
-async function sendContactMessage() {
-    const name = document.getElementById('contactName').value;
-    const email = document.getElementById('contactEmail').value;
-    const subject = document.getElementById('contactSubject').value;
-    const message = document.getElementById('contactMessage').value;
-    const btn = document.getElementById('submitButton');
+async function sendMessage() {
+    // HTML'deki ID'ler: contactName, contactEmail (Senin paylaştığın dosyaya göre)
+    const name = document.getElementById('contactName')?.value || document.getElementById('contact-name')?.value;
+    const email = document.getElementById('contactEmail')?.value || document.getElementById('contact-email')?.value;
+    const subject = document.getElementById('contactSubject')?.value || document.getElementById('contact-subject')?.value;
+    const message = document.getElementById('contactMessage')?.value || document.getElementById('contact-message')?.value;
 
-    const oldText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+    if (!name || !email || !message) {
+        showToast("Please fill all fields!", "error");
+        return;
+    }
 
-    const contactData = { name, email, subject, message };
+    const token = localStorage.getItem('token');
+    if (!token) {
+        showToast("You must LOGIN to send a message!", "error");
+        return;
+    }
 
     try {
-        const res = await fetch(API_CONTACT, {
+        const response = await fetch(API_CONTACT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(contactData)
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            },
+            body: JSON.stringify({ name, email, subject, message })
         });
 
-        if (res.ok) {
-            showToast("✅ Message sent successfully!", "success");
-            setTimeout(() => window.location.reload(), 1500); 
+        if (response.ok) {
+            showToast("Message sent successfully! ✅", "success");
+            // Formu resetle (hangi form id varsa)
+            const form = document.getElementById('contact-form') || document.querySelector('form');
+            if(form) form.reset();
         } else {
-            showToast("❌ Error sending message.", "error");
-            btn.disabled = false;
-            btn.innerHTML = oldText;
+            showToast("Error sending message!", "error");
         }
     } catch (error) {
-        console.error(error);
-        showToast("Server connection error!", "error");
-        btn.disabled = false;
-        btn.innerHTML = oldText;
+        console.error("Error:", error);
+        showToast("Server error!", "error");
     }
 }
 
 // =========================================
-// ✏️ PROFİL DÜZENLEME (EDIT PROFILE)
+// ✏️ PROFİL DÜZENLEME
 // =========================================
-
 async function loadProfileData() {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
@@ -902,29 +830,16 @@ async function loadProfileData() {
             headers: { 'Authorization': `Token ${token}` }
         });
         const data = await res.json();
-
         if (res.ok) {
-            if(document.getElementById('profile-name')) 
-                document.getElementById('profile-name').innerText = `${data.first_name} ${data.last_name}`;
-            if(document.getElementById('profile-username')) 
-                document.getElementById('profile-username').innerText = `@${data.username}`;
-            if(document.getElementById('profile-email')) 
-                document.getElementById('profile-email').innerText = data.email;
-
-            document.getElementById('edit-firstname').value = data.first_name;
-            document.getElementById('edit-lastname').value = data.last_name;
-            document.getElementById('edit-email').value = data.email;
+            if(document.getElementById('edit-firstname')) document.getElementById('edit-firstname').value = data.first_name;
+            if(document.getElementById('edit-lastname')) document.getElementById('edit-lastname').value = data.last_name;
+            if(document.getElementById('edit-email')) document.getElementById('edit-email').value = data.email;
         }
-    } catch (e) { console.error("Profil yüklenemedi", e); }
-}
-
-function openEditProfileModal() {
-    const modal = new bootstrap.Modal(document.getElementById('editProfileModal'));
-    modal.show();
+    } catch (e) { console.error(e); }
 }
 
 async function saveProfileChanges() {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
     const fName = document.getElementById('edit-firstname').value;
     const lName = document.getElementById('edit-lastname').value;
     const email = document.getElementById('edit-email').value;
@@ -936,40 +851,20 @@ async function saveProfileChanges() {
                 'Content-Type': 'application/json',
                 'Authorization': `Token ${token}`
             },
-            body: JSON.stringify({
-                first_name: fName,
-                last_name: lName,
-                email: email
-            })
+            body: JSON.stringify({ first_name: fName, last_name: lName, email: email })
         });
-
-        const result = await res.json();
-
         if (res.ok) {
-            showToast("Profile updated successfully! ✅", "success");
-            localStorage.setItem('fullName', result.full_name);
-            document.getElementById('profile-name').innerText = result.full_name;
-            document.getElementById('profile-email').innerText = email;
-            
-            const modalEl = document.getElementById('editProfileModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-        } else {
-            showToast("Error: " + (result.error || "Update failed"), "error");
+            const result = await res.json();
+            showToast("Profile updated!", "success");
+            localStorage.setItem('full_name', result.full_name);
+            location.reload();
         }
-    } catch (e) {
-        console.error(e);
-        showToast("Server connection error!", "error");
-    }
+    } catch (e) { console.error(e); }
 }
 
-// =========================================
-// 👁️ ŞİFRE GÖSTER / GİZLE
-// =========================================
 function togglePassword(inputId, btn) {
     const input = document.getElementById(inputId);
     const icon = btn.querySelector('i');
-
     if (input.type === "password") {
         input.type = "text";
         icon.classList.remove('bi-eye-slash-fill');
@@ -982,109 +877,46 @@ function togglePassword(inputId, btn) {
 }
 
 // =========================================
-// ⬆️ YUKARI ÇIK BUTONU
+// 🏠 ADRES YÖNETİMİ
 // =========================================
-document.addEventListener("DOMContentLoaded", function() {
-    const scrollBtn = document.createElement("button");
-    scrollBtn.id = "scrollTopBtn";
-    scrollBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
-    scrollBtn.title = "Go to top";
-    document.body.appendChild(scrollBtn);
-
-    window.addEventListener("scroll", function() {
-        if (window.scrollY > 300) {
-            scrollBtn.classList.add("show");
-        } else {
-            scrollBtn.classList.remove("show");
-        }
-    });
-
-    scrollBtn.addEventListener("click", function() {
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    });
-});
-
-// =========================================
-// 📢 AKILLI DUYURU ÇUBUĞU
-// =========================================
-document.addEventListener("DOMContentLoaded", function() {
-    
-    // Login sayfasında gizle
-    if (window.location.pathname.includes('login.html')) return;
-
-    const bar = document.createElement("div");
-    bar.id = "announcement-bar";
-    const text = "🔥 SUMMER SALE IS ON! UP TO 50% OFF ON ALL ELECTRONICS! FREE SHIPPING ON ORDERS OVER $2000 🚀";
-    bar.innerHTML = `<div class=\"announcement-content\">${text}</div>`;
-    document.body.prepend(bar);
-
-    const content = bar.querySelector('.announcement-content');
-    const animationDuration = 15;
-    let startTime = sessionStorage.getItem('announcementStart');
-    
-    if (!startTime) {
-        startTime = Date.now();
-        sessionStorage.setItem('announcementStart', startTime);
-    }
-
-    const currentTime = Date.now();
-    const elapsedTime = (currentTime - startTime) / 1000;
-    const currentOffset = elapsedTime % animationDuration;
-    content.style.animationDelay = `-${currentOffset}s`;
-});
-
-// =========================================
-// 🏠 ADRES YÖNETİMİ (ADDRESS BOOK)
-// =========================================
-
 async function loadAddresses() {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
         const res = await fetch(API_ADDRESS, { headers: { 'Authorization': `Token ${token}` } });
         const data = await res.json();
         
-        // 1. Profil Sayfası
         const list = document.getElementById('address-list');
+        const select = document.getElementById('savedAddressSelect');
+
         if (list) {
             list.innerHTML = "";
-            if (data.length === 0) {
-                list.innerHTML = '<div class="text-muted">No saved addresses.</div>';
-            } else {
-                data.forEach(addr => {
-                    list.innerHTML += `
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body position-relative">
-                                    <h6 class="fw-bold"><i class="bi bi-geo-alt-fill text-primary"></i> ${addr.title}</h6>
-                                    <p class="small text-muted mb-1">${addr.full_address}</p>
-                                    <p class="small text-muted mb-0">${addr.city} - ${addr.phone}</p>
-                                    <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 border-0" onclick="deleteAddress(${addr.id})"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                        </div>`;
-                });
-            }
+            if (data.length === 0) list.innerHTML = "<p>No addresses found.</p>";
+            data.forEach(addr => {
+                list.innerHTML += `
+                    <div class="col-md-6 mb-2">
+                        <div class="card p-3 shadow-sm relative">
+                            <strong>${addr.title}</strong><br>
+                            ${addr.full_address} - ${addr.city}<br>
+                            <small>${addr.phone}</small>
+                            <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" onclick="deleteAddress(${addr.id})">X</button>
+                        </div>
+                    </div>`;
+            });
         }
-
-        // 2. Checkout Sayfası (Dropdown)
-        const select = document.getElementById('savedAddressSelect');
+        
         if (select) {
-            select.innerHTML = '<option value="" selected>-- Select a Saved Address --</option>';
+            select.innerHTML = '<option value="">-- Select Address --</option>';
             data.forEach(addr => {
                 select.innerHTML += `<option value='${JSON.stringify(addr)}'>${addr.title}</option>`;
             });
         }
-
     } catch (e) { console.error(e); }
 }
 
 async function saveAddress() {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('token');
     const title = document.getElementById('addr-title').value;
     const city = document.getElementById('addr-city').value;
     const phone = document.getElementById('addr-phone').value;
@@ -1097,153 +929,223 @@ async function saveAddress() {
             body: JSON.stringify({ title, city, phone, full_address: full })
         });
         if (res.ok) {
-            showToast("Address Saved! 🏠", "success");
+            showToast("Address Saved!", "success");
             loadAddresses();
+            // Modalı kapat
             const modalEl = document.getElementById('addAddressModal');
             if(modalEl) bootstrap.Modal.getInstance(modalEl).hide();
-            document.getElementById('addr-title').value = "";
-            document.getElementById('addr-text').value = "";
         }
     } catch (e) { console.error(e); }
 }
 
 async function deleteAddress(id) {
-    if(!confirm("Are you sure?")) return;
-    const token = localStorage.getItem('userToken');
+    if(!confirm("Delete address?")) return;
     try {
-        await fetch(`${API_ADDRESS}?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Token ${token}` } });
-        showToast("Address Deleted", "error");
+        await fetch(`${API_ADDRESS}?id=${id}`, { 
+            method: 'DELETE', 
+            headers: { 'Authorization': `Token ${localStorage.getItem('token')}` } 
+        });
         loadAddresses();
     } catch (e) { console.error(e); }
 }
 
 function fillCheckoutForm(selectElement) {
     const val = selectElement.value;
-    if (!val) return;
+    const addressInput = document.getElementById('address');
+    const phoneInput = document.getElementById('phone');
+
+    // Eğer kullanıcı "Seçiniz" (boş) seçeneğine dönerse kilidi aç ki elle yazabilsin
+    if (!val) {
+        addressInput.removeAttribute('readonly');
+        phoneInput.removeAttribute('readonly');
+        addressInput.classList.remove('bg-light'); // Gri rengi kaldır
+        
+        // İstersen içini de temizle (temizlemek istemiyorsan alt 2 satırı sil)
+        addressInput.value = "";
+        phoneInput.value = "";
+        return;
+    }
+
     const addr = JSON.parse(val);
     
-    document.getElementById('address').value = addr.full_address + ", " + addr.city;
-    document.getElementById('phone').value = addr.phone;
+    // 1. Bilgileri Doldur
+    addressInput.value = addr.full_address + ", " + addr.city;
+    phoneInput.value = addr.phone;
+    
+    // 2. 🔥 KUTULARI KİLİTLE (READONLY)
+    addressInput.setAttribute('readonly', true);
+    phoneInput.setAttribute('readonly', true);
+    
+    // 3. Görsel olarak gri yap (Kilitli olduğu anlaşılsın)
+    addressInput.classList.add('bg-light');
+    phoneInput.classList.add('bg-light');
+
     showToast("Address loaded: " + addr.title, "success");
 }
 
-function increaseQty() {
-    const input = document.getElementById('product-qty');
-    if(input) input.value = parseInt(input.value) + 1;
-}
-
-function decreaseQty() {
-    const input = document.getElementById('product-qty');
-    if(input && input.value > 1) input.value = parseInt(input.value) - 1;
-}
-
 // =========================================
-// 🔥 YENİ KARŞILAŞTIRMA SİSTEMİ (RESET BUTONLU) 🔥
+// 🔥 KARŞILAŞTIRMA (COMPARE)
 // =========================================
 let compareList = [];
 
-// 1. Listeye Ekle/Çıkar
 function toggleCompare(id) {
     const product = allProducts.find(p => p.id === id); 
     if (!product) return;
-
-    // Zaten listede mi?
     const exists = compareList.find(p => p.id === id);
 
     if (exists) {
         compareList = compareList.filter(p => p.id !== id);
-        showToast("Removed from comparison 📉", "error");
+        showToast("Removed from comparison", "error");
     } else {
-        // Kural 1: Maksimum 3 ürün
-        if (compareList.length >= 3) {
-            showToast("You can compare max 3 items! ⚠️", "error");
-            return;
-        }
-
-        // Kural 2: Aynı kategori zorunluluğu
+        if (compareList.length >= 3) { showToast("Max 3 items!", "error"); return; }
         if (compareList.length > 0 && compareList[0].category != product.category) {
-            showToast(`Can't compare different categories! 🚫`, "error");
-            return;
+            showToast("Different categories!", "error"); return;
         }
-
         compareList.push(product);
-        showToast("Added to comparison 📊", "success");
+        showToast("Added to comparison", "success");
     }
-
     updateCompareUI();
 }
 
-// 2. Butonları Göster/Gizle (GÜNCELLENDİ)
 function updateCompareUI() {
     const container = document.getElementById('compare-floating-container');
     const countSpan = document.getElementById('compare-count');
-    
     if (countSpan) countSpan.innerText = compareList.length;
-
-    if (container) {
-        // Liste boşsa kutuyu gizle, doluysa göster
-        if (compareList.length > 0) {
-            container.style.display = 'block';
-        } else {
-            container.style.display = 'none';
-        }
-    }
+    if (container) container.style.display = compareList.length > 0 ? 'block' : 'none';
 }
 
-// 3. Listeyi Sıfırla (YENİ FONKSİYON)
 function resetComparison() {
-    compareList = []; // Listeyi boşalt
-    updateCompareUI(); // Ekranı güncelle (buton kaybolacak)
-    showToast("Comparison list cleared! 🗑️", "info");
+    compareList = [];
+    updateCompareUI();
 }
 
-// 4. Modalı Aç ve Tabloyu Çiz
 function openCompareModal() {
     const header = document.getElementById('compare-header');
     const body = document.getElementById('compare-body');
     const modalEl = document.getElementById('compareModal');
-    
     if (!modalEl) return;
+    
     const modal = new bootstrap.Modal(modalEl);
+    if (compareList.length < 2) { showToast("Select at least 2 items!", "error"); return; }
 
-    if (compareList.length < 2) {
-        showToast("Select at least 2 items to compare! ⚠️", "error");
-        return;
-    }
-
-    // Tablo Başlıkları
-    let headerHTML = '<tr><th class="p-3 bg-light">Feature</th>';
-    compareList.forEach(p => {
-        let img = p.image ? (p.image.startsWith('http') ? p.image : BASE_URL + p.image) : 'https://via.placeholder.com/100';
-        headerHTML += `
-            <th class="p-3" style="width: ${90 / compareList.length}%">
-                <img src="${img}" style="height:80px; object-fit:contain;" class="d-block mx-auto mb-2">
-                <div class="fw-bold small">${p.name}</div>
-            </th>
-        `;
-    });
+    // Tabloyu oluştur (Basitleştirilmiş)
+    let headerHTML = '<tr><th>Feature</th>';
+    compareList.forEach(p => headerHTML += `<th>${p.name}</th>`);
     headerHTML += '</tr>';
     header.innerHTML = headerHTML;
 
-    // Tablo İçeriği
-    const rows = [
-        { label: 'Price', key: 'price', format: (v) => `<span class="fw-bold text-primary">$${v}</span>` },
-        { label: 'Category', key: 'category', format: (v) => `<span class="badge bg-secondary">Cat ID: ${v}</span>` },
-        { label: 'Stock', key: 'stock', format: (v) => v > 0 ? '<span class="text-success fw-bold">In Stock</span>' : '<span class="text-danger fw-bold">Out of Stock</span>' },
-        { label: 'Description', key: 'description', format: (v) => `<small class="text-muted">${v.substring(0,50)}...</small>` }
-    ];
-
-    let bodyHTML = '';
-    rows.forEach(row => {
-        bodyHTML += `<tr><td class="fw-bold bg-light">${row.label}</td>`;
-        compareList.forEach(p => {
-            let val = p[row.key];
-            if (row.format) val = row.format(val);
-            bodyHTML += `<td>${val}</td>`;
-        });
-        bodyHTML += `</tr>`;
-    });
-
+    let bodyHTML = `<tr><td>Price</td>${compareList.map(p => `<td>$${p.price}</td>`).join('')}</tr>`;
+    bodyHTML += `<tr><td>Stock</td>${compareList.map(p => `<td>${p.stock}</td>`).join('')}</tr>`;
     body.innerHTML = bodyHTML;
+    
     modal.show();
 }
+
+// =========================================
+// ✨ OTOMATİK FORM DOLDURMA (CONTACT)
+// =========================================
+async function autoFillContactForm() {
+    // 1. Giriş yapmamışsa hiç uğraşma
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // 2. Sayfada Contact formu var mı?
+    // (Senin HTML'de ID'ler bazen contact-name bazen contactName olabiliyor, ikisine de bakalım)
+    const nameInput = document.getElementById('contact-name') || document.getElementById('contactName');
+    const emailInput = document.getElementById('contact-email') || document.getElementById('contactEmail');
+
+    // Eğer sayfada bu kutular yoksa (Mesela Ana Sayfadaysan) dur.
+    if (!nameInput && !emailInput) return;
+
+    // 3. Bilgileri Çek ve Doldur
+    try {
+        const res = await fetch(API_PROFILE, {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            if (nameInput) {
+                nameInput.value = `${data.first_name} ${data.last_name}`;
+                // Kutuyu kitleyelim ki değiştiremesin (Opsiyonel, istersen bu satırı sil)
+                nameInput.setAttribute('readonly', true); 
+                nameInput.classList.add('bg-light'); // Gri yapsın
+            }
+            if (emailInput) {
+                emailInput.value = data.email;
+                emailInput.setAttribute('readonly', true);
+                emailInput.classList.add('bg-light');
+            }
+        }
+    } catch (e) {
+        console.error("Autofill error:", e);
+    }
+}
+
+// =========================================
+// ➕ MİKTAR ARTIR / AZALT (DETAIL PAGE)
+// =========================================
+function increaseQty() {
+    const qtyInput = document.getElementById('product-qty');
+    if(qtyInput) {
+        let val = parseInt(qtyInput.value);
+        qtyInput.value = val + 1;
+    }
+}
+
+function decreaseQty() {
+    const qtyInput = document.getElementById('product-qty');
+    if(qtyInput) {
+        let val = parseInt(qtyInput.value);
+        if(val > 1) { // 1'in altına düşmesin
+            qtyInput.value = val - 1;
+        }
+    }
+}
+
+// =========================================
+// ⬆️ GLOBAL SCROLL TO TOP (Tüm Sayfalar İçin)
+// =========================================
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // 1. Butonu Yoktan Var Et (Create Element)
+    const topBtn = document.createElement("button");
+    topBtn.innerHTML = '<i class="bi bi-arrow-up fw-bold fs-4"></i>';
+    topBtn.className = "btn btn-primary rounded-circle shadow-lg";
+    topBtn.id = "btn-back-to-top";
+    
+    // 2. Butonun Stillerini Ayarla (CSS)
+    // Chatbot varsa onun üstünde dursun diye bottom: 90px yaptık
+    Object.assign(topBtn.style, {
+        display: "none", // Başlangıçta gizli
+        position: "fixed",
+        bottom: "90px", 
+        right: "25px",
+        zIndex: "9999",
+        width: "50px",
+        height: "50px",
+        border: "2px solid white",
+        transition: "all 0.3s"
+    });
+
+    // 3. Butonu Sayfaya (Body'ye) Ekle
+    document.body.appendChild(topBtn);
+
+    // 4. Kaydırma Olayını Dinle
+    window.addEventListener("scroll", function() {
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            topBtn.style.display = "block";
+        } else {
+            topBtn.style.display = "none";
+        }
+    });
+
+    // 5. Tıklama Olayı (Yukarı Fırlat)
+    topBtn.addEventListener("click", function() {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    });
+});
+

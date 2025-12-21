@@ -32,7 +32,8 @@
                 </ul>
 
                 <div class="d-flex align-items-center">
-                    <div id="user-area" class="me-3 d-flex align-items-center"></div> <button class="btn btn-outline-light rounded-pill me-2" onclick="toggleTheme()" id="theme-btn">
+                    <div id="user-area" class="me-3 d-flex align-items-center"></div> 
+                    <button class="btn btn-outline-light rounded-pill me-2" onclick="toggleTheme()" id="theme-btn">
                         <i class="bi bi-moon-stars-fill"></i>
                     </button>
                     
@@ -69,30 +70,30 @@
                     <div class="card-body p-5">
                         <h3 class="fw-bold text-center mb-4">Send us a Message</h3>
                         
-                        <form onsubmit="event.preventDefault(); sendContactMessage();">
+                        <form id="contact-form" onsubmit="event.preventDefault();">
                             
                             <div class="form-floating mb-3">
-                                <input class="form-control" id="contactName" type="text" placeholder="Enter your name..." required />
-                                <label for="contactName">Full Name</label>
+                                <input class="form-control" id="contact-name" type="text" placeholder="Enter your name..." required />
+                                <label for="contact-name">Full Name</label>
                             </div>
                             
                             <div class="form-floating mb-3">
-                                <input class="form-control" id="contactEmail" type="email" placeholder="name@example.com" required />
-                                <label for="contactEmail">Email address</label>
+                                <input class="form-control" id="contact-email" type="email" placeholder="name@example.com" required />
+                                <label for="contact-email">Email address</label>
                             </div>
                             
                             <div class="form-floating mb-3">
-                                <input class="form-control" id="contactSubject" type="text" placeholder="Subject..." required />
-                                <label for="contactSubject">Subject</label>
+                                <input class="form-control" id="contact-subject" type="text" placeholder="Subject..." required />
+                                <label for="contact-subject">Subject</label>
                             </div>
                             
                             <div class="form-floating mb-3">
-                                <textarea class="form-control" id="contactMessage" placeholder="Enter your message here..." style="height: 10rem" required></textarea>
-                                <label for="contactMessage">Message</label>
+                                <textarea class="form-control" id="contact-message" placeholder="Enter your message here..." style="height: 10rem" required></textarea>
+                                <label for="contact-message">Message</label>
                             </div>
 
                             <div class="d-grid">
-                                <button class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm" id="submitButton" type="submit">
+                                <button class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm" id="submitButton" type="button" onclick="sendMessage()">
                                     Send Message <i class="bi bi-send-fill ms-2"></i>
                                 </button>
                             </div>
@@ -140,7 +141,7 @@
             </div>
             
             <div class="border-top border-secondary pt-3 mt-3 text-center small text-secondary">
-                &copy; 2025 White Goods Concept. All rights reserved.
+                © 2025 White Goods Concept. All rights reserved.
             </div>
         </div>
     </footer>

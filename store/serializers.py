@@ -33,10 +33,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
+# store/serializers.py dosyasındaki ContactSerializer'ı bununla değiştir:
+
 class ContactSerializer(serializers.ModelSerializer):
+    # 🔥 BU SATIR ÇOK ÖNEMLİ: User'ı frontend'den bekleme, ben views'de ekleyeceğim diyoruz.
+    user = serializers.PrimaryKeyRelatedField(read_only=True) 
+
     class Meta:
         model = ContactMessage
-        fields = '__all__'
+        fields = ['id', 'user', 'name', 'email', 'subject', 'message', 'created_at']
+        # Veya fields = '__all__' kullanıyorsan da üstteki user satırı işi çözer.
 
 class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')

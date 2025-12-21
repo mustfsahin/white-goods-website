@@ -214,10 +214,8 @@
                 <div class="modal-body p-0">
                     <div class="table-responsive">
                         <table class="table table-bordered text-center mb-0 align-middle">
-                            <thead class="bg-light" id="compare-header">
-                                </thead>
-                            <tbody id="compare-body">
-                                </tbody>
+                            <thead class="bg-light" id="compare-header"></thead>
+                            <tbody id="compare-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -225,12 +223,11 @@
         </div>
     </div>
 
-        <div id="compare-floating-container" class="position-fixed start-50 translate-middle-x" style="bottom: 30px; z-index: 1050; display: none;">
+    <div id="compare-floating-container" class="position-fixed start-50 translate-middle-x" style="bottom: 30px; z-index: 1050; display: none;">
         <div class="d-flex gap-2 align-items-center">
             <button class="btn btn-warning rounded-pill shadow-lg px-4 py-2 fw-bold" onclick="openCompareModal()">
                 Compare (<span id="compare-count">0</span>) Items <i class="bi bi-arrow-left-right ms-2"></i>
             </button>
-            
             <button class="btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
                     style="width: 42px; height: 42px;" 
                     onclick="resetComparison()" 
@@ -269,7 +266,7 @@
             </div>
         </div>
     </div>
-
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/script.js"></script>
 </body>

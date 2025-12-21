@@ -5,20 +5,35 @@ from simple_history.admin import SimpleHistoryAdmin
 from .models import Category, Product, Order, OrderItem, Coupon, Review, Address, ContactMessage
 
 # --- PDF KÜTÜPHANESİ ---
+# Eğer yüklü değilse terminale: pip install reportlab
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
 # =======================================================
-# 1. EXCEL ÇIKTISI ALMA
+# 1. EXCEL (CSV) ÇIKTISI ALMA
 # =======================================================
 def export_to_csv(modeladmin, request, queryset):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="orders_report.csv"'
+    
+    # Excel'in Türkçe karakterleri tanıması için BOM ekliyoruz
+    response.write(u'\ufeff'.encode('utf8'))
+    
     writer = csv.writer(response)
     writer.writerow(['Order ID', 'Customer', 'Phone', 'Total', 'Date', 'Status'])
+    
     for order in queryset:
-        writer.writerow([order.id, order.full_name, order.phone, order.total_price, order.created_at.strftime("%d-%m-%Y"), order.status])
+        writer.writerow([
+            order.id, 
+            order.full_name, 
+            order.phone, 
+            order.total_price, 
+            order.created_at.strftime("%d-%m-%Y %H:%M"), 
+            order.status
+        ])
+    
     return response
+
 export_to_csv.short_description = '📄 Export to Excel (CSV)'
 
 # =======================================================
@@ -33,13 +48,19 @@ def download_pdf_invoice(modeladmin, request, queryset):
 
     for order in queryset:
         # --- BAŞLIK ---
+        # Not: Türkçe karakter sorunu yaşamamak için Standart Font yerine
+        # Harici bir .ttf fontu yüklenmesi gerekir. Şimdilik standart Helvetica kullanıldı.
         p.setFont("Helvetica-Bold", 20)
         p.drawString(50, height - 50, f"INVOICE #{order.id}")
         
         p.setFont("Helvetica", 12)
         p.drawString(50, height - 80, f"Customer: {order.full_name}")
         p.drawString(50, height - 100, f"Date: {order.created_at.strftime('%d-%m-%Y %H:%M')}")
-        p.drawString(50, height - 120, f"Address: {order.address}")
+        
+        # Adres çok uzunsa PDF dışına taşmasın diye ilk 50 karakteri alıyoruz
+        short_address = order.address[:50] + "..." if len(order.address) > 50 else order.address
+        p.drawString(50, height - 120, f"Address: {short_address}")
+        
         p.drawString(50, height - 140, f"Status: {order.status}")
 
         p.line(50, height - 160, 550, height - 160)
@@ -56,10 +77,18 @@ def download_pdf_invoice(modeladmin, request, queryset):
 
         items = order.items.all()
         for item in items:
-            p.drawString(50, y, f"{item.product_name[:35]}") 
+            # Ürün adı çok uzunsa keselim
+            prod_name = item.product_name[:35] if item.product_name else "Unknown Product"
+            
+            p.drawString(50, y, f"{prod_name}") 
             p.drawString(350, y, f"{item.quantity}")
             p.drawString(450, y, f"${item.product_price}")
             y -= 20
+            
+            # Sayfa sonuna gelirse yeni sayfa aç (Basit kontrol)
+            if y < 100:
+                p.showPage()
+                y = height - 50
         
         # --- TOPLAM ---
         p.line(50, y - 10, 550, y - 10)
@@ -67,7 +96,7 @@ def download_pdf_invoice(modeladmin, request, queryset):
         p.drawString(350, y - 40, "TOTAL:")
         p.drawString(450, y - 40, f"${order.total_price}")
 
-        p.showPage()
+        p.showPage() # Her sipariş yeni sayfada başlasın
 
     p.save()
     return response
@@ -75,7 +104,7 @@ def download_pdf_invoice(modeladmin, request, queryset):
 download_pdf_invoice.short_description = '🖨️ Download PDF Invoice'
 
 # =======================================================
-# 3. ADMIN AYARLARI
+# 3. ADMIN SINIFLARI
 # =======================================================
 
 class OrderItemInline(admin.TabularInline):
@@ -92,7 +121,6 @@ class OrderAdmin(SimpleHistoryAdmin):
     actions = [export_to_csv, download_pdf_invoice]
     list_per_page = 20
 
-# 🔥 BURASI DÜZELTİLDİ: updated_at YOK!
 class ProductAdmin(SimpleHistoryAdmin):
     list_display = ['name', 'price', 'stock', 'category'] 
     list_filter = ['category'] 
@@ -104,6 +132,11 @@ class AddressAdmin(admin.ModelAdmin):
     list_display = ['title', 'user', 'city', 'phone']
     list_filter = ['city']
 
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'subject', 'created_at']
+    readonly_fields = ['name', 'email', 'subject', 'message', 'created_at']
+    list_filter = ['created_at']
+
 # =======================================================
 # 4. KAYITLAR
 # =======================================================
@@ -113,4 +146,4 @@ admin.site.register(Order, OrderAdmin)
 admin.site.register(Coupon)
 admin.site.register(Review)
 admin.site.register(Address, AddressAdmin)
-admin.site.register(ContactMessage)
+admin.site.register(ContactMessage, ContactMessageAdmin)
