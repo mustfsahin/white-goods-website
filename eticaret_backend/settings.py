@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-(9#p#p7ww4@wn87+upg+soz3m-cdn#=taww3g-$g07br!0tcr*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -161,3 +162,5 @@ JAZZMIN_SETTINGS = {
     "copyright": "TechnoStore Ltd.",
     "search_model": "auth.User",
 }
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
